@@ -7,6 +7,7 @@ Created on Tue May 18 11:00:23 2021
 """
 import csv
 import numpy as np
+import scipy.optimize
 
 # math helpers
 TODEG = 180 / np.pi
@@ -18,6 +19,52 @@ ex = np.array([1,0,0])
 ey = np.array([0,1,0])
 ez = np.array([0,0,1])
 eps = 1E-5
+
+def fit_sin(tt, yy):
+    '''Fit sin to the input time sequence, and return fitting parameters "amp", "omega", "phase", "offset", "freq", "period" and "fitfunc"'''
+    tt = np.array(tt)
+    yy = np.array(yy)
+    ff = np.fft.fftfreq(len(tt), (tt[1]-tt[0]))   # assume uniform spacing
+    Fyy = abs(np.fft.fft(yy))
+    guess_freq = abs(ff[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
+    guess_amp = np.std(yy) * 2.**0.5
+    guess_offset = np.mean(yy)
+    guess = np.array([guess_amp, 2.*np.pi*guess_freq, 0., guess_offset])
+
+    def sinfunc(t, A, w, p, c):  return A * np.sin(w*t + p) + c
+    popt, pcov = scipy.optimize.curve_fit(sinfunc, tt, yy, p0=guess)
+    A, w, p, c = popt
+    f = w/(2.*np.pi)
+    fitfunc = lambda t: A * np.sin(w*t + p) + c
+    return {"amp": A, "omega": w, "phase": p, "offset": c, "freq": f, "period": 1./f, "fitfunc": fitfunc, "maxcov": np.max(pcov), "rawres": (guess,popt,pcov)}
+
+def diff(v):
+    v_ = np.diff(v)
+    return np.append(v_[0], v_)
+
+def quat_to_XYZ(q):
+        qr,qx,qy,qz = q
+#        vz = [2*(qx*qz + qy*qr),
+#              2*(qy*qz - qx*qr),
+#              1 - 2*qx*qx - qy*qy]
+#        
+        q2sqr = qy * qy
+        t0 = -2.0 * (q2sqr + qz * qz) + 1.0
+        t1 = +2.0 * (qx * qy + qr * qz)
+        t2 = -2.0 * (qx * qz - qr * qy)
+        t3 = +2.0 * (qy * qz + qr * qx)
+        t4 = -2.0 * (qx * qx + q2sqr) + 1.0
+    
+#        t2 = t2 > 1.0 ? 1.0 : t2
+        t2 = np.min([t2, +1.0])
+#        t2 = t2 < -1.0 ? -1.0 : t2
+        t2 = np.max([t2, -1.0])
+        
+        pitch = np.arcsin(t2)
+        roll = np.arctan2(t3, t4)
+        yaw = np.arctan2(t1, t0)
+        
+        return roll,pitch,yaw
 
 def curvature(f, dt):
     try:

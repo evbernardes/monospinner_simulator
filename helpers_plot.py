@@ -8,11 +8,7 @@ Created on Tue Nov 23 08:59:32 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helpers import angdiff, wrap, ez
-from constants import TODEG, TORAD
-
-#from helper_functions import subplot
-from Quaternion import Quaternion as Quat
+from helpers import angdiff, wrap, ez, TODEG, TORAD, quat_to_XYZ
 import quaternionic as quat
 #
 #from helpers_indices import iQA, iQX, iQY, iQZ, iX, iY, iZ, x_len, iQ_, iX_
@@ -181,7 +177,7 @@ def plot_q_omega(t, q, w, e = np.array([0, 0, 1]), tight=True, title='q and omeg
 #    pitch = []
 #    yaw = []
 #    for i in range(len(t)):   
-#        roll_,pitch_,yaw_ = Quat.to_XYZ([qr[i],qx[i],qy[i],qz[i]])
+#        roll_,pitch_,yaw_ = quat_to_XYZ([qr[i],qx[i],qy[i],qz[i]])
 #        roll.append(roll_*TODEG)
 #        pitch.append(pitch_*TODEG)
 #        yaw.append(yaw_*TODEG)
@@ -283,7 +279,7 @@ def plot_x_eta(sim, i = None, tight = True):
     pitch = []
     yaw = []
     for i in range(len(t)):   
-        roll_,pitch_,yaw_ = Quat.to_XYZ([qr[i],qx[i],qy[i],qz[i]])
+        roll_,pitch_,yaw_ = quat_to_XYZ([qr[i],qx[i],qy[i],qz[i]])
         roll.append(roll_*TODEG)
         pitch.append(pitch_*TODEG)
         yaw.append(yaw_*TODEG)
@@ -386,7 +382,7 @@ def plot_error(t, x, eta, tight=True, title='error'):
     pitch = []
     yaw = []
     for i in range(len(t)):   
-        roll_,pitch_,yaw_ = Quat.to_XYZ([qr[i],qx[i],qy[i],qz[i]])
+        roll_,pitch_,yaw_ = quat_to_XYZ([qr[i],qx[i],qy[i],qz[i]])
         roll.append(roll_*TODEG)
         pitch.append(pitch_*TODEG)
         yaw.append(yaw_*TODEG)
@@ -433,7 +429,7 @@ def plot_error(t, x, eta, tight=True, title='error'):
     pitch = []
     yaw = []
     for i in range(len(t)):   
-        roll_,pitch_,yaw_ = Quat.to_XYZ([qr[i],qx[i],qy[i],qz[i]])
+        roll_,pitch_,yaw_ = quat_to_XYZ([qr[i],qx[i],qy[i],qz[i]])
         roll.append(roll_*TODEG)
         pitch.append(pitch_*TODEG)
         yaw.append(yaw_*TODEG)

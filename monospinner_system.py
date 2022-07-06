@@ -31,6 +31,19 @@ list3 = ['k', 'k_measured', 'w', 'w_measured', 'w_delta',
          't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn', 
          't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'kd']
 
+def save_param_dict(sim, datadict, param_dict_name):
+    param_dict = getattr(sim, param_dict_name)
+    for item in param_dict.items():
+        datadict[f'{param_dict_name}_{item[0]}'] = item[1]
+ 
+def load_param_dict(datadict, param_dict_name):
+    param_dict = {}
+    L = len(param_dict_name)
+    for item in datadict.items():
+        if(item[0][:L] == param_dict_name):
+            param_dict[item[0][L+1:]] = item[1]
+    return param_dict
+
 def set_blender_file(sim, frame_step = 1, show_pos = False, frames_max = 1000):
     
     step = int(sim.N / frames_max)
@@ -74,7 +87,7 @@ class Monospinner:
                  param_init = param_init, 
                  param_goal = param_goal):
         
-        #%% set all elements
+#        %% set all elements
         set_phys(self, param_phys, False)
         set_time(self, param_time, False)
         set_ctrl(self, param_ctrl, False)
@@ -84,8 +97,18 @@ class Monospinner:
         
         self.init_arrays()
         
+
+        
+        
+        
     def save(self, filename):
         data = {}
+#        save_param_dict(self, data, 'param_phys')
+#        save_param_dict(self, data, 'param_time')
+#        save_param_dict(self, data, 'param_ctrl')
+#        save_param_dict(self, data, 'param_noise')
+#        save_param_dict(self, data, 'param_init')
+#        save_param_dict(self, data, 'param_goal')
         data['param_phys'] = self.param_phys
         data['param_time'] = self.param_time
         data['param_ctrl'] = self.param_ctrl
@@ -94,29 +117,44 @@ class Monospinner:
         data['param_goal'] = self.param_goal
         data['N'] = self.N
         data['i'] = self.i
-        data['qr'] = list(self.q.real)
-        data['qx'] = list(self.q.x)
-        data['qy'] = list(self.q.y)
-        data['qz'] = list(self.q.z)
-        data['qmr'] = list(self.q_measured.real)
-        data['qmx'] = list(self.q_measured.x)
-        data['qmy'] = list(self.q_measured.y)
-        data['qmz'] = list(self.q_measured.z)
+        
+        for att in list2+list3+['q', 'q_measured']:
+            data[f'{att}'] = getattr(self, att).tolist()
+        
+#        data['q'] = self.q.tolist()
+#        data['q_measured'] = self.q_measured.tolist()
+#        data['qr'] = list(self.q.real)
+#        data['qx'] = list(self.q.x)
+#        data['qy'] = list(self.q.y)
+#        data['qz'] = list(self.q.z)
+#        data['qmr'] = list(self.q_measured.real)
+#        data['qmx'] = list(self.q_measured.x)
+#        data['qmy'] = list(self.q_measured.y)
+#        data['qmz'] = list(self.q_measured.z)
         
 #        for att in list1:
 #            data[f'{att}'] = getattr(self, att)
         
-        for att in list2:
-            data[f'{att}'] = list(getattr(self, att))
-        
-        for att in list3:
-            x, y, z = getattr(self, att).T
-            data[f'{att}_x'] = list(x)
-            data[f'{att}_y'] = list(y)
-            data[f'{att}_z'] = list(z)
+#        for att in list2:
+#            data[f'{att}'] = list(getattr(self, att))
+##        
+#        for att in list3:
+#            x, y, z = getattr(self, att).T
+#            data[f'{att}_x'] = list(x)
+#            data[f'{att}_y'] = list(y)
+#            data[f'{att}_z'] = list(z)
             
+        dirs = os.path.dirname(filename)
+        
+        if dirs != '' and not os.path.exists(dirs):
+            os.makedirs(dirs, exist_ok=True)
+        
+#        try:
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)
+#            return True
+#        except:
+#            return data
             
         
             
@@ -129,34 +167,41 @@ class Monospinner:
             
         sim = cls(data['param_phys'], data['param_time'], data['param_ctrl'], 
                  data['param_noise'], data['param_init'], data['param_goal'])
-            
-        qr = data['qr']
-        qx = data['qx']
-        qy = data['qy']
-        qz = data['qz']
-        sim.q = quat.array(np.vstack([qr, qx, qy, qz]).T)
-            
-        qmr = data['qmr']
-        qmx = data['qmx']
-        qmy = data['qmy']
-        qmz = data['qmz']
-        sim.q_measured = quat.array(np.vstack([qmr, qmx, qmy, qmz]).T)
         
-#        for att in list1:
-#            setattr(sim, att, data[f'{att}'])
-        
-        sim.i = data['i']
-        sim.N = data['N']
-        
-        for att in list2:
+        for att in list2+list3:
             setattr(sim, att, np.array(data[f'{att}']))
-#            data[f'{att}'] = list(getattr(self, att))
-        
-        for att in list3:
-            x = np.array(data[f'{att}_x'])
-            y = np.array(data[f'{att}_y'])
-            z = np.array(data[f'{att}_z'])
-            setattr(sim, att, np.vstack([x,y,z]).T)
+            
+        for att in ['q', 'q_measured']:
+            setattr(sim, att, quat.array(data[f'{att}']))
+#            data[f'{att}'] = getattr(self, att).tolist()
+            
+#        qr = data['qr']
+#        qx = data['qx']
+#        qy = data['qy']
+#        qz = data['qz']
+#        sim.q = quat.array(np.vstack([qr, qx, qy, qz]).T)
+#            
+#        qmr = data['qmr']
+#        qmx = data['qmx']
+#        qmy = data['qmy']
+#        qmz = data['qmz']
+#        sim.q_measured = quat.array(np.vstack([qmr, qmx, qmy, qmz]).T)
+#        
+##        for att in list1:
+##            setattr(sim, att, data[f'{att}'])
+#        
+#        sim.i = data['i']
+#        sim.N = data['N']
+#        
+#        for att in list2:
+#            setattr(sim, att, np.array(data[f'{att}']))
+##            data[f'{att}'] = list(getattr(self, att))
+#        
+#        for att in list3:
+#            x = np.array(data[f'{att}_x'])
+#            y = np.array(data[f'{att}_y'])
+#            z = np.array(data[f'{att}_z'])
+#            setattr(sim, att, np.vstack([x,y,z]).T)
         
         return sim
         
