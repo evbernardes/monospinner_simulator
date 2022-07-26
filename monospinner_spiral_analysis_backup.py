@@ -42,66 +42,26 @@ drift_angle.sort()
 #%% loading
 time_start = time.time()
 #sims = [Monospinner.load(f'{folder}/{angle}.json') for angle in drift_angle]
-#sims = {angle : Monospinner.load(f'{folder}/{angle}.json') for angle in drift_angle}
+sims = {angle : Monospinner.load(f'{folder}/{angle}.json') for angle in drift_angle}
 
 elapsed = time.time() - time_start
 elapsed_min = int(elapsed / 60)
 elapsed_sec = int(elapsed - 60*elapsed_min)
 print(f'Total loading time: {elapsed_min}:{elapsed_sec}')
-
-#%%
-#xlim = (-0.625, 13.125)
-#ylim = (-1.6783636047132449, -0.1543166201438059)
-xlim = (-0.1, 5.125)
-ylim = (-1.0, -0.2)
-
-width = 11.5
-height = 5
-angles_ = drift_angle[::30]
-angles_ = [0, 45, 80, 85, 90, 91, 100, 110, 150]
-#, 85, 91, 100, 160, 170, 180]
-plt.figure('log r')
-plt.clf()
-for angle in angles_:
-    sim = sims[angle]
-    r = np.linalg.norm(sim.k[:,:2], axis=1)
-    r0 = r[0]
-    a = np.logical_and(r > 0.20, r < 0.8)
-    plt.plot(sim.t[a], np.log(r[a]/r0))
-#    plt.xlim([-, 12])
-#    plt.ylim([-1, np.log(0.8)/1.1])
-#plt.xlim(xlim)
-#plt.ylim(ylim)
-plt.xlabel(r'$t$ (seconds)')
-plt.title(r'$\log(r)$')
-plt.legend([f'{a} deg' for a in angles_]+legend)
-
-
-angles_ = [-160, -80, -30, 0, 30, 80, 160]
-plt.figure('phse r')
-plt.clf()
-for angle in angles_:
-    sim = sims[angle]
-    phase = np.unwrap(np.arctan2(sim.k.T[1], sim.k.T[0]))
-#    r = np.linalg.norm(sim.k[:,:2], axis=1)
-#    a = np.logical_and(r > 0.20, r < 0.8)
-    plt.plot(sim.t, phase)
-#    plt.xlim([-, 12])
-#    plt.ylim([-1, np.log(0.8)/1.1])
-plt.xlim([0, 3.2])
-plt.ylim([-100, 100])
-plt.xlabel(r'$t$ (seconds)')
-plt.ylabel(r'$\phi$ (rad)')
-plt.title(r'$\phi$')
-plt.legend([f'{a} deg' for a in angles_]+legend)
-
 #%%
 width = 11.5
 height = 5
 
-#angles_ = np.array([-150, -130, -110, -90, -80])
-#angles_ = drift_angle[::30]
-angles_ = drift_angle
+#select = [-85, 85, 10]
+#select = [-170, 170, 1]
+#select = [0, 170, 1]
+#case = np.logical_and(drift_angle >= select[0], drift_angle <= select[1])
+#sims_ = np.array(sims)[case][::select[2]].tolist()
+
+#sims_ = sims[:]
+
+#angles_ = drift_angle[:]
+angles_ = np.array([-150, -130, -110, -90, -80])
     
 leg = []
 aa = []
@@ -113,7 +73,6 @@ plt.figure('spin drift analysis', figsize=(height*2, height*3))
 plt.clf()
 l = 4
 c = 3
-
 
 for angle in angles_:
 #for sim in [sims_[0]]:
@@ -137,6 +96,10 @@ for angle in angles_:
     predd = diff(pred)/sim.DT
     nutd = diff(nut)/sim.DT
     env = abs(sc.signal.hilbert(predd))
+    
+#    init_ = np.logical_and(sim.t > 0.1, abs(predd) < 0.1)
+#    init_ = np.where(init_)[0][0]
+#    init.append(init_)
 
     rlog = np.log(r)
     
@@ -175,7 +138,7 @@ for angle in angles_:
     
     subplot(l,c,2,2)
     plt.plot(sim.t, np.log(r))
-#    plt.plot(sim.t[idx], P(sim.t[idx]), 'k', linestyle = 'dashed')
+    plt.plot(sim.t[idx], P(sim.t[idx]), 'k', linestyle = 'dashed')
     plt.xlabel(r't'); plt.ylabel('log(r)')
     plt.title(r'model: $\log(r) = a + bt$')
     
@@ -301,52 +264,6 @@ deg = 1
 plt.tight_layout()
 
 #%%
-plt.figure('der ln r',figsize=(height, height))
-plt.clf()
-plt.plot(leg, -bb)
-plt.xlabel(r'$\psi$ (spin drift)')
-plt.ylabel(r'$b$')
-plt.title(r'$b = -dlnr/dt$')
-bars()
-plt.tight_layout()
-#
-plt.figure('der phi',figsize=(height, height))
-plt.clf()
-plt.plot(leg[8:], dd[8:])
-plt.xlabel(r'$\psi$ (spin drift)')
-plt.ylabel(r'$a$')
-plt.title(r'$d = -dphi/dt$')
-bars()
-plt.tight_layout()
-#
-plt.figure('a/b',figsize=(height, height))
-plt.clf()
-plt.plot(leg[8:], -dd[8:]/bb[8:])
-#plt.plot(leg, np.tan(leg*TORAD), 'k', linestyle = 'dashed')
-plt.xlabel(r'$\psi$ (spin drift)')
-plt.ylabel(r'$a/b$')
-plt.title(r'$d = -dphi/dt$')
-plt.ylim([-200,200])
-bars()
-plt.tight_layout()
-#
-plt.figure('a_b fit',figsize=(height, height))
-plt.clf()
-plt.plot(leg[8:], np.arctan2(dd[8:], -bb[8:]), 'r.')
-#plt.plot(leg[8:], np.arctan2(dd[8:], -bb[8:]), 'b.')
-#plt.plot(leg[8:], np.tan(leg[8:]*TORAD), 'k', linestyle = 'dashed')
-plt.plot(leg[8:], leg[8:]*TORAD, 'k', linestyle = 'dashed')
-plt.ylim([-2.5, 2.5])
-#plt.plot(leg, np.tan(leg*TORAD), 'k', linestyle = 'dashed')
-plt.xlabel(r'$\psi$ (spin drift)')
-plt.ylabel(r'$atan2(a, b)$')
-plt.title(r'$d = -dphi/dt$')
-plt.legend(['data',r'fit: $\psi = atan2(a, b)$'])
-#plt.ylim([-200,200])
-bars()
-plt.tight_layout()
-
-#%%
 r = np.sqrt(bb*bb + dd*dd)
 a = np.arctan(dd/bb)
 plt.figure('dd bb', figsize=(width, width))
@@ -373,50 +290,45 @@ plt.ylabel('arctan')
 bars()
 
 #%%#############################
-plt.figure('spin drift k vector', figsize=(height, height))
+plt.figure('spin drift k vector', figsize=(height*2, height*2))
 plt.clf()
 #ax = plt.axes(projection = '3d')
 plt.axes().set_aspect('equal')
 
-legend = []
+#i_ = [10]
+i_ = np.where(leg == 80)[0]
+#sims_ = sims[i_]
+#lambratio = -22
 
-#angles_ = [-60, -30, -10, 0, 10, 30, 60]
-#angles_ = [0, 10, 20, 30, 60, 70, 75]
-#angles_ = [85, 92, 110]
-angles_ = [80]
-colors = []
-
-for angle in angles_:
-    sim = sims[angle]
+#for sim in sims_:
+for i in i_:
+    sim = sims_[i]
+    init = int(sim.N/10)
+#    init = 1
     
+    pre = np.unwrap(sim.pre[init:])
+    r0 = np.linalg.norm(sim.k[init,:2])
     drift = sim.drift_angle_init
+#    lamb_ = lambratio / drift
     lamb_ = - 1/np.tan(drift)
+#    lamb_ = lamb[i]
+    r = r0 * np.exp(lamb_ * (pre - pre[0]))
+#    r = r0 * np.exp(lamb_ * (pre - pre[0]))
+    x = r*np.cos(pre)
+    y = r*np.sin(pre)
+    z = np.sqrt(1 - r*r)
+    
+#    ax.plot3D(sim.k[:,0], sim.k[:,1], sim.k[:,2])
+#    ax.plot3D(x, y, z, 'k', linestyle= 'dashed')
     
     
-    init1 = int(sim.N/10)
-    init1=1
-    pre1 = np.unwrap(sim.pre[init1:])
-    r01 = np.linalg.norm(sim.k[init1,:2])
-    r1 = r01 * np.exp(lamb_ * (pre1 - pre1[0]))
-    x1 = r1*np.cos(pre1)
-    y1 = r1*np.sin(pre1)
-    
-    init2 = 1
-    pre2 = np.unwrap(sim.pre[init2:])
-    r02 = np.linalg.norm(sim.k[init2,:2])
-    r2 = r02 * np.exp(lamb_ * (pre2 - pre2[0]))
-    x2 = r2*np.cos(pre2)
-    y2 = r2*np.sin(pre2)
-    
-#    plt.plot(sim.k[:,0], sim.k[:,1])
-#    plt.plot(x, y, 'k', linestyle='dashed')
-    p = plt.plot(sim.k[:,1], -sim.k[:,0])
-    colors.append(p[0].get_color())
-    plt.plot(y1, -x1, 'r', linestyle='dashed'); legend.append(f'fit starting at t = {sim.t[init1]}s')
-#    plt.plot(y2, -x2, 'b', linestyle='dashed'); legend.append(f'fit starting at t = {sim.t[init2]}s')
+#    plt.plot(sim.k[init:,0], sim.k[init:,1])
+    plt.plot(sim.k[:,0], sim.k[:,1])
+    plt.plot(x, y, 'k', linestyle='dashed')
+#    leg.append(int(sim.drift_angle[0]*TODEG))
 
-#plt.plot(circle(1)[0], circle(1)[1], 'k', linestyle='dashed'); #legend.append(r'$\theta_2 = \pi$')
-plt.plot(circle(np.cos(np.pi/4))[0], circle(np.cos(np.pi/4))[1], 'gray', linestyle='dashed'); #legend.append(r'$\theta_2 = \pi/2$')
+#plt.legend(leg)
+#plt.plot(circle_2[0], circle_2[1], 'gray', linestyle='dashed')
 #lim = [-1.1, 1.1]
 lim = np.array([-1, 1])*0.75
 plt.xlim(lim)
@@ -425,16 +337,7 @@ plt.xlabel(r'$k_x$')
 plt.ylabel(r'$k_y$')
 #plt.zlabel(r'$k_z$')
 plt.title(r'$(k_x, k_y)$')
-plt.legend([f'data' for a in angles_]+legend)
-#plt.legend([f'{a} deg' for a in angles_]+[f'fit starting at t = {sim.t[init]}s'])
-
-
-#idart = 200
-#for angle, c in zip(angles_, colors):
-#    sim = sims[angle]
-#    plt.plot(sim.k[idart:idart+1,1], -sim.k[idart:idart+1,0], '-<', color = c)
-plt.tight_layout()
-#plt.legend(['data', 'fit'])
+plt.legend(['data', 'fit'])
 
 
 

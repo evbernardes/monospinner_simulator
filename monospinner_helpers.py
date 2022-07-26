@@ -13,6 +13,14 @@ from helpers import mstack, cross
 from helpers import TODEG, TORAD, Id, zeroM, zeroV, ez, Ez, eps
 import quaternionic as quat
 
+#list1 = ['param_phys', 'param_time', 'param_ctrl', 'param_noise', 'param_init', 'param_goal', 'N', 'i']
+arrlist_quat = ['q', 'q_measured', 'q_drift']
+arrlist_1 = ['t', 'alpha', 'beta', 'drift_angle', 'drift_angle_measured', 'rotvel', 'pre', 'nut', 'spin', 'alpha_lim', 'fz', 'tz']
+arrlist_3 = ['k', 'k_measured', 'w', 'w_measured', 'w_delta', 
+         'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl', 
+         't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn', 
+         't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'kd']
+
 #def set_blender_file(sim, frame_step = 1, show_pos = False, frames_max = 1000):
 #    
 #    step = int(sim.N / frames_max)
@@ -173,6 +181,7 @@ def set_time(sim, param_time, init_arrays = True):
     sim.beta = np.zeros(N)
     sim.Xd = np.zeros([N,3])
     sim.drift_angle = np.zeros(N)
+    sim.drift_angle_measured = np.zeros(N)
     sim.angles = np.zeros([N,3])
     sim.rotvel = np.zeros(N)
     sim.pos = np.zeros([N,3])

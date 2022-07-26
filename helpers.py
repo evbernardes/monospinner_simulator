@@ -38,9 +38,9 @@ def fit_sin(tt, yy):
     fitfunc = lambda t: A * np.sin(w*t + p) + c
     return {"amp": A, "omega": w, "phase": p, "offset": c, "freq": f, "period": 1./f, "fitfunc": fitfunc, "maxcov": np.max(pcov), "rawres": (guess,popt,pcov)}
 
-def diff(v):
+def diff(v, DT = 1):
     v_ = np.diff(v)
-    return np.append(v_[0], v_)
+    return np.append(v_[0], v_)/DT
 
 def quat_to_XYZ(q):
         qr,qx,qy,qz = q
@@ -112,6 +112,21 @@ def get_middle_vector(q, k_old = None, e = np.array([0, 0, 1]), eps = 1E-5):
             return k / np.linalg.norm(k)
     else:    
         return k / N
+
+def get_middle_vector_array(q, e = np.array([0, 0, 1]), eps = 1E-5):
+    k = q.rotate(e) + e
+    N = np.linalg.norm(k, axis=1)
+    
+    case_singular = N < eps
+    
+    k[~case_singular] = (k.T / N).T[~case_singular]
+    
+    for i in np.where(case_singular)[0]:
+        k[i] = k[i-1] - (k[i-1].dot(e))*e
+        k[i] /= np.linalg.norm(k[i])
+    
+    return k
+    
 
 def find_n(a,b):
     diff = abs(a - b)

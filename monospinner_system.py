@@ -9,6 +9,7 @@ Created on Thu Sep  9 11:20:49 2021
 import os
 import time
 import numpy as np
+from numpy.linalg import norm
 import json
 import quaternionic as quat
 #from numpy.linalg import norm
@@ -17,19 +18,13 @@ import matplotlib.pyplot as plt
 
 from monospinner_parameters import param_ctrl, param_goal, param_init, param_noise, param_phys, param_time
 from monospinner_helpers import set_ctrl, set_goal, set_init, set_noise, set_phys, set_time
+from monospinner_helpers import arrlist_1, arrlist_3, arrlist_quat
 from helpers import wrap, cross, ad, get_middle_vector, mstack
 from helpers import TODEG, TORAD, Id, zeroM, zeroV, ez, Ez, eps
 from helpers_plot import plot_x_eta, plot_k_omega, plot_F
 
 
-#list1 = ['param_phys', 'param_time', 'param_ctrl', 'param_noise', 'param_init', 'param_goal', 'N', 'i']
 
-list2 = ['t', 'alpha', 'beta', 'drift_angle', 'rotvel', 'pre', 'nut', 'spin', 'alpha_lim', 'fz', 'tz']
-
-list3 = ['k', 'k_measured', 'w', 'w_measured', 'w_delta', 
-         'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl', 
-         't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn', 
-         't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'kd']
 
 def save_param_dict(sim, datadict, param_dict_name):
     param_dict = getattr(sim, param_dict_name)
@@ -118,7 +113,7 @@ class Monospinner:
         data['N'] = self.N
         data['i'] = self.i
         
-        for att in list2+list3+['q', 'q_measured']:
+        for att in arrlist_1+arrlist_3+arrlist_quat:
             data[f'{att}'] = getattr(self, att).tolist()
         
 #        data['q'] = self.q.tolist()
@@ -168,11 +163,17 @@ class Monospinner:
         sim = cls(data['param_phys'], data['param_time'], data['param_ctrl'], 
                  data['param_noise'], data['param_init'], data['param_goal'])
         
-        for att in list2+list3:
-            setattr(sim, att, np.array(data[f'{att}']))
+        for att in arrlist_1+arrlist_3:
+            try:
+                setattr(sim, att, np.array(data[f'{att}']))
+            except:
+                pass
             
-        for att in ['q', 'q_measured']:
-            setattr(sim, att, quat.array(data[f'{att}']))
+        for att in arrlist_quat:
+            try:
+                setattr(sim, att, quat.array(data[f'{att}']))
+            except:
+                pass
 #            data[f'{att}'] = getattr(self, att).tolist()
             
 #        qr = data['qr']
@@ -227,15 +228,8 @@ class Monospinner:
         for i in range(self.ngoal):
             self.nd[idx[i]] = self.nd_[i]
             
-        kd = (self.nd + ez).T/np.linalg.norm(self.nd + ez, axis=1)
+        kd = (self.nd + ez).T/norm(self.nd + ez, axis=1)
         self.kd = kd = kd.T
-        
-#        #%% Forces
-#        self.FZ = self.mT * self.g
-#        self.fz = self.FZ * ez
-#        self.tz = self.B @ self.fz
-#        self.gamma_d = 1.0 * np.sqrt(self.FZ / self.kf) # rotor mean velocity
-
         
         #%% set initial values
         self.q[0] = self.q0
@@ -258,61 +252,39 @@ class Monospinner:
         if stop_at_goal is not None:
             stop_at_goal = np.cos(stop_at_goal*TORAD / 2)
         
-        DT = self.DT
         N = self.N
-        q = self.q
-        k = self.k
-        w = self.w
-        rotvel = self.rotvel
-        angles = self.angles
 
-        pos = self.pos
-        v = self.v
-
-        
         time_start = time.time()
         time_end = time.time()
         print(f'progress: {0}%, {0}/{self.N}, elapsed: {time_end-time_start:.2f}')
-        for i in range(self.i+1, N):
+        for i in range(self.i+1, self.N):
             
             #%% calculate all forces
             self.control(i) # attitude control
             self.motor_model(i) # get motor commands for given control
             self.gravity_and_aero(i)
             
-            #%% integration
-            etad = self.integrate(i)
-            
-            #%% reconstruction
-            w[i] = w[i-1] + DT*etad[:3]
-            v[i] = v[i-1] + DT*etad[3:]
-            angles[i][2] = angles[i-1][2] + rotvel[i-1]*DT
-            
-            qd = DT * 0.5 * q[i-1] * quat.array.from_vector_part(w[i-1])
-            q[i] = (q[i-1] + qd).normalized
-            pos[i] = pos[i-1] + DT * q[i-1].rotate(v[i-1])
-            
-            k[i] = get_middle_vector(q[i], k[i-1])
-            
-            self.pre[i],self.nut[i],self.spin[i] = self.q[i].to_euler_angles.T
-            self.spin[i] += self.pre[i]
+            #%% integration and reconstruction
+            etad = self.get_accelerations(i)
+            self.integrate(etad, i)
             
             #%% noisy measurements unreliable measurements
             self.get_measured_data(i)
+            self.estimate_drift_angle(i)
             
 #            alpha_now = q[i].to_euler_angles[1]
-            if stop_at_goal is not None and k[i].dot(self.kd[i]) >= stop_at_goal:
+            if stop_at_goal is not None and self.k[i].dot(self.kd[i]) >= stop_at_goal:
                 break
                 
                 
 #            if stop_at_goal and abs(self.nut[i]) < 1*TORAD:
 #                break
              
-            if self.gamma_d != 0 and np.linalg.norm(w[i]) > 10*self.gamma_d:
+            if self.gamma_d != 0 and norm(self.w[i]) > 10*self.gamma_d:
                 break
             
             if i % self.dN == 0:
-                alpha_now = q[i-1].to_euler_angles[1]
+                alpha_now = self.q[i-1].to_euler_angles[1]
                 time_end = time.time()
                 elapsed = time_end-time_start
                 elapsed_min = int(elapsed / 60)
@@ -333,7 +305,7 @@ class Monospinner:
         self.i = i
         
         
-        if i < N-1:
+        if i < self.N-1:
             self.trim_results(i)
         
     #%%
@@ -377,12 +349,12 @@ class Monospinner:
         ftot = self.f_ctrl[i] + self.fz
         
         # propeller force and torque   
-        self.rotvel[i] = np.sqrt(np.linalg.norm(ftot)/self.kf)
+        self.rotvel[i] = np.sqrt(norm(ftot)/self.kf)
         self.rotvel[i] = max(self.rotvel[i], self.rotvel_diff_lim[0]*self.gamma_d)
         self.rotvel[i] = min(self.rotvel[i], self.rotvel_diff_lim[1]*self.gamma_d)
         
         # get rotor angles
-        ftot = ftot/np.linalg.norm(ftot)
+        ftot = ftot/norm(ftot)
         self.angles[i][1] = np.arccos(ftot[2])
         self.angles[i][0] = np.arctan2(ftot[1], ftot[0])
         
@@ -396,6 +368,9 @@ class Monospinner:
             self.angles[i][1] = 0
         elif self.angles[i][1] > self.alpha_lim[1]:
             self.angles[i][1] = self.alpha_lim[1]
+            
+#        if self.angles[i][1] < 10E-1:
+#            self.angles[i][0] = 0
         
         Omega = 0*self.w[i-1][-1] + self.rotvel[i]
         fp = self.kf * Omega * Omega
@@ -409,10 +384,10 @@ class Monospinner:
         self.f_grav[i] = +self.mT * g_B
         
         # aerodynamic drag torque
-        self.t_aero[i] = -np.linalg.norm(self.w[i-1]) * self.Kaero @ self.w[i-1]
-#        self.t_aero[i] = -np.linalg.norm(self.w) * self.Kaero @ self.w[i-1]
+        self.t_aero[i] = -norm(self.w[i-1]) * self.Kaero @ self.w[i-1]
+#        self.t_aero[i] = -norm(self.w) * self.Kaero @ self.w[i-1]
         
-    def integrate(self, i, gymbal_fixed = False):
+    def get_accelerations(self, i, gymbal_fixed = False):
         w_ = self.w[i-1]
         v_ = self.v[i-1]
         
@@ -442,6 +417,21 @@ class Monospinner:
         
         return etad
     
+    def integrate(self, etad, i):
+        DT = self.DT
+        self.w[i] = self.w[i-1] + DT*etad[:3]
+        self.v[i] = self.v[i-1] + DT*etad[3:]
+        self.angles[i][2] = self.angles[i-1][2] + self.rotvel[i-1]*DT
+        
+        qd = DT * 0.5 * self.q[i-1] * quat.array.from_vector_part(self.w[i-1])
+        self.q[i] = (self.q[i-1] + qd).normalized
+        self.pos[i] = self.pos[i-1] + DT * self.q[i-1].rotate(self.v[i-1])
+        
+        self.k[i] = get_middle_vector(self.q[i], self.k[i-1])
+        
+        self.pre[i],self.nut[i],self.spin[i] = self.q[i].to_euler_angles.T
+        self.spin[i] += self.pre[i]
+    
     def get_measured_data(self, i):
         self.drift_angle[i] = self.drift_angle[i-1] + self.DT*self.drift_rate
         self.q_drift[i] = quat.array.from_axis_angle(self.drift_angle[i] * ez)
@@ -450,11 +440,35 @@ class Monospinner:
         self.q_measured[i] = (self.q_measured[i]*self.q_drift[i]).normalized
         self.k_measured[i] = get_middle_vector(self.q_measured[i], self.k_measured[i])
         
+    def estimate_drift_angle(self, i):
+#        q = self.q_measured[i]
+#        k = self.k_measured[i]
+#        w = self.w_measured[i]
+        
+        def get_drift_angle(q, w, k):
+            Rw = q.rotate(w)
+            wb = ez * k.dot(Rw) / k.dot(ez)
+            wk = q.rotate(w - wb)
+            kdot = -0.5 * np.cross(k, wk)
+            b = k.dot(ez) * kdot.dot(ez)
+            d = np.cross(k, kdot).dot(ez)
+            return np.arctan2(d, b)
+        
+        q = self.q[i]
+        k = self.k[i]
+        w = self.w[i]
+        
+        self.drift_angle_measured[i] = get_drift_angle(
+                self.q_measured[i], 
+                self.k_measured[i], 
+                self.w_measured[i])
+        
+        
+        
+        
     def trim_results(self, i = None):
         if i is None:
             i = self.i
-        for att in list2 + list3:
+        for att in arrlist_1 + arrlist_3 + arrlist_quat:
             setattr(self, att, getattr(self, att)[:i])
-        self.q = self.q[:i]
-        self.q_measured = self.q_measured[:i]
 

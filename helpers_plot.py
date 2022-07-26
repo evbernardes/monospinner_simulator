@@ -292,16 +292,19 @@ def plot_x_eta(sim, i = None, tight = True):
         plt.tight_layout()
         
 #def plot_k_omega(t, q, w, angles, rotvel, nd = np.array([0, 0, 1]), tight=True, wz_ = None, w_measured = None, q_measured = None):
-def plot_k_omega(sim, i = None, tight = True):
+def plot_k_omega_zyz(sim, i = None, tight = True, plot_drift = False):
     
 #    t,q,q_measured,w,w_measured,pos,v,k,k_measured, kd, wz_, angles, rotvel = sim.get_values(i)
     t = sim.t
     
-    m = 3 + (sim.q_measured is not None)
+    test = plot_drift and sim.q_measured is not None
+    
+    m = 3 + test
+#    m = 3
     
     plt.clf()
     
-    if sim.w_measured is not None:
+    if test:
         subplot(m,4,1,1); plt.plot(t, sim.w_measured.T[0],'m');
         subplot(m,4,2,1); plt.plot(t, sim.w_measured.T[1],'y'); 
         subplot(m,4,3,1); plt.plot(t, sim.w_measured.T[2],'c'); 
@@ -320,7 +323,7 @@ def plot_k_omega(sim, i = None, tight = True):
     qd = -quat.array.from_vector_part(sim.kd) * quat.array.from_vector_part(ez)
     pred, nutd, spind = wrap(qd.to_euler_angles).T
     
-    if sim.q_measured is not None:
+    if test:
 #        pre_measured, nut_measured, spin_measured = wrap(q_measured.to_euler_angles).T
 #        spin_measured = wrap(spin_measured + pre_measured)
 #        
@@ -364,6 +367,68 @@ def plot_k_omega(sim, i = None, tight = True):
     if tight:
         plt.tight_layout()
 
+def plot_k_omega(sim, i = None, tight = True, plot_drift = False):
+    
+#    t,q,q_measured,w,w_measured,pos,v,k,k_measured, kd, wz_, angles, rotvel = sim.get_values(i)
+    t = sim.t
+    
+    test = plot_drift and sim.q_measured is not None
+    
+    m = 3 + test
+#    m = 3
+    
+    plt.clf()
+    
+    if test:
+        subplot(m,3,1,1); plt.plot(t, sim.w_measured.T[0],'m');
+        subplot(m,3,2,1); plt.plot(t, sim.w_measured.T[1],'y'); 
+        subplot(m,3,3,1); plt.plot(t, sim.w_measured.T[2],'c'); 
+    
+    subplot(m,3,1,1); plt.plot(t, sim.w.T[0],'r'); plt.ylabel(r'$\omega_x$'); plt.title(r'$\omega$')
+    subplot(m,3,2,1); plt.plot(t, sim.w.T[1],'g'); plt.ylabel(r'$\omega_y$');
+    
+    subplot(m,3,3,1)
+    # terminal angular velocity
+    if sim.terminal_wz is not None:
+#        plt.hlines(sim.terminal_wz, t[0], t[-1], 'k', linestyles='dashed')
+        plt.plot([t[0], t[-1]], [sim.terminal_wz, sim.terminal_wz], 'k', linestyle='dashed')
+    plt.plot(t, sim.w.T[2],'b'); plt.ylabel(r'$\omega_z$');
+    plt.legend(['terminal velocity'])
+    
+    
+    pre, nut, spin = wrap(sim.q.to_euler_angles).T
+    spin = wrap(spin + pre)
+    
+    qd = -quat.array.from_vector_part(sim.kd) * quat.array.from_vector_part(ez)
+    pred, nutd, spind = wrap(qd.to_euler_angles).T
+    
+    subplot(m,3,1,2); 
+    plt.plot(t, sim.kd[:, 0], 'k'); plt.ylabel(r'$k_x$');
+    plt.plot(t, sim.k[:, 0],'r'); plt.ylim([-1.1, 1.1]);
+    plt.title(r'middle vector $(k)$')
+#    plt.hlines(kd[0], t[0], t[-1], colors='k', linestyles='dashed')
+    subplot(m,3,2,2); 
+    plt.plot(t, sim.kd[:, 1], 'k'); plt.ylabel(r'$k_y$');
+    plt.plot(t, sim.k[:, 1],'g'); plt.ylim([-1.1, 1.1])
+#    plt.hlines(kd[1], t[0], t[-1], colors='k', linestyles='dashed')
+    subplot(m,3,3,2); 
+    plt.plot(t, sim.kd[:, 2], 'k'); plt.ylabel(r'$k_z$');
+    plt.plot(t, sim.k[:, 2],'b'); plt.ylim([-0.1, 1.1])
+#    plt.hlines(kd[2], t[0], t[-1], colors='k', linestyles='dashed')
+   
+#    subplot(4343); plt.plot(t, phi,'k'); #plt.ylim([-1.1, 1.1])
+    
+    
+    #%% rotor variables
+    subplot(m,3,1,3); plt.plot(t, sim.angles.T[0]*TODEG,'r'); plt.ylabel(r'$\beta$'); #plt.ylim([-0.1, 15*np.pi/180]); plt.title('ang')
+    plt.title('motor inputs')
+    subplot(m,3,2,3); plt.plot(t, sim.angles.T[1]*TODEG,'g'); plt.ylabel(r'$\alpha$'); #plt.ylim([-np.pi, np.pi])
+    subplot(m,3,3,3); plt.plot(t, sim.rotvel,'b'); plt.ylabel(r'$\dot \gamma$ rad/s'); #plt.ylim([-np.pi, np.pi])
+#    print(list(plt.yticks()[0]))
+#    plt.yticks(list(plt.yticks()[0]) + np.median(rotvel));# plt.ylim([min(rotvel)-200, max(rotvel)+200])
+    
+    if tight:
+        plt.tight_layout()
 
 def plot_error(t, x, eta, tight=True, title='error'):
     plt.figure(title)
