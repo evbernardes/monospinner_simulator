@@ -245,8 +245,7 @@ class Monospinner:
         #        print(f'progress: {100*i/N:.2f}%, {i}/{N}, elapsed: {elapsed:.2f}s, remaining: {remaining:.2f}s')
                 print(f'progress: {100*i/N:.0f}%, '
                       f'{i}/{N}, elapsed: {elapsed_min}:{elapsed_sec:.0f}, '
-                      f'remaining: {remaining_min}:{remaining_sec:.0f}, '
-                      f'nut: {alpha_now*TODEG:.2f}')
+                      f'remaining: {remaining_min}:{remaining_sec:.0f}, ')
 
         print('****************************************')
         print('* End of test at i = {}/{}'.format(i, N-1))
