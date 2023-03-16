@@ -8,14 +8,22 @@ Created on Tue Nov 23 08:59:32 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .helpers import angdiff, wrap, ez, TODEG, TORAD, quat_to_XYZ, circle
+from .helpers import angdiff, wrap, ez, TODEG, TORAD, quat_to_XYZ
 import quaternionic as quat
-#
 
-def subplot(a,*vargin,**kargs):
+
+# helper to draw circles
+def circle(r = 1):
+    circle = np.array(range(360))*TORAD
+    return [r*np.cos(circle), r*np.sin(circle)]
+
+
+# r argument subplot
+def subplot(a, *vargin, **kargs):
     if len(vargin) == 0:
         if type(a) != int or a < 1000 or a > 9999:
-            raise ValueError('Single argument to subplot must be a 4-digit integer')
+            raise ValueError('Single argument to subplot must be a 4-digit'
+                             'integer')
         rows = int(a/1000)
         cols = int((a-rows*1000)/100)
         r = int((a-rows*1000-cols*100)/10)
@@ -23,13 +31,15 @@ def subplot(a,*vargin,**kargs):
     elif len(vargin) == 3:
         for v in vargin:
             if type(v) != int:
-                raise ValueError('Illegal argument(s) to subplot: {}'.format((a,)+vargin))
+                raise ValueError('Illegal argument(s) to subplot: '
+                                 '{}'.format((a,)+vargin))
         rows = a
-        cols,r,c = vargin
+        cols, r, c = vargin
     else:
-        raise ValueError('Illegal argument(s) to subplot: {}'.format((a,)+vargin))
+        raise ValueError('Illegal argument(s) to subplot: '
+                         '{}'.format((a,)+vargin))
 
-    return plt.subplot(rows,cols,c + cols*(r-1),**kargs)
+    return plt.subplot(rows, cols, c + cols*(r-1), **kargs)
 
 #####################################
 # PLOT METHODS

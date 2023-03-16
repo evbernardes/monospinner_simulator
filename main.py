@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 
-from Simulator.Monospinner import Monospinner
+from Simulator.monospinner import Monospinner
 from Simulator import helpers_plot
 
 #%% open parameters
@@ -45,7 +45,7 @@ plt.figure('nmiddle projection', figsize=(5, 5))
 helpers_plot.plot_nmiddle_projection(sim)
 
 # sim results
-plt.figure('sim results', figsize=(15, 5))
+plt.figure('system overview', figsize=(15, 5))
 helpers_plot.plot_nmiddle_and_angvel(sim)
 
 # sim results in ZYZ angles
