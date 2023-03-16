@@ -8,7 +8,7 @@ Created on Tue Nov 23 08:59:32 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helpers import angdiff, wrap, ez, TODEG, TORAD, quat_to_XYZ
+from .helpers import angdiff, wrap, ez, TODEG, TORAD, quat_to_XYZ, circle
 import quaternionic as quat
 #
 
@@ -345,9 +345,57 @@ def plot_k_omega_zyz(sim, i = None, tight = True, plot_drift = False):
     if tight:
         plt.tight_layout()
 
-def plot_k_omega(sim, i = None, tight = True, plot_drift = False):
+def plot_precession_nutation(sim, i = None, tight = True, plot_drift = False):
+    t = sim.t
+    width = 5
+    height = 5
+    i = sim.i
 
-#    t,q,q_measured,w,w_measured,pos,v,k,k_measured, kd, wz_, angles, rotvel = sim.get_values(i)
+    plt.clf()
+
+    pred = np.arctan2(sim.nd.T[1], sim.nd.T[0])
+    nutd = np.arccos(sim.nd.T[2])
+
+    pre = np.copy(sim.pre)
+    pre[abs(sim.nut) < 0.001] = 0
+
+    subplot(3,1,1,1);
+    plt.plot(t, pred*TODEG, 'k')
+    plt.plot(t, wrap(pre)*TODEG,'r');
+    plt.ylim([-200, 200]);
+    subplot(3,1,2,1);
+    plt.plot(t, nutd*TODEG, 'k')
+    plt.plot(t, wrap(sim.nut)*TODEG,'g');
+    plt.ylim([-10, 90]);
+    subplot(3,1,3,1);
+    plt.plot(t, wrap(sim.spin)*TODEG,'b');
+    plt.tight_layout()
+
+def plot_nmiddle_projection(sim, i = None, tight = True, plot_drift = False):
+    t = sim.t
+    width = 5
+    height = 5
+    i = sim.i
+
+    circle_1 = circle()
+    circle_2 = circle(1/np.sqrt(2))
+
+    plt.clf()
+    plt.axes().set_aspect('equal')
+    legend = []
+    plt.plot(circle(1)[0], circle(1)[1], 'k', linestyle='dashed'); legend.append(r'$\theta_2 = \pi$')
+    plt.plot(circle(np.cos(np.pi/4))[0], circle(np.cos(np.pi/4))[1], 'gray', linestyle='dashed'); legend.append(r'$\theta_2 = \pi/2$')
+    plt.plot(sim.k[:,0], sim.k[:,1]); legend.append('middle vector')
+    plt.plot(sim.kd[0].T[0], sim.kd[0].T[1], 'r.'); legend.append('initial orientation')
+    plt.legend(legend)
+    plt.xlim([-1.1, 1.1])
+    plt.ylim([-1.1, 1.1])
+    plt.xlabel(r'$k_x$')
+    plt.ylabel(r'$k_y$')
+    plt.title(r'$(k_x, k_y)$')
+    plt.tight_layout()
+
+def plot_nmiddle_and_angvel(sim, i = None, tight = True, plot_drift = False):
     t = sim.t
 
     test = plot_drift and sim.q_measured is not None
@@ -485,7 +533,7 @@ def plot_error(t, x, eta, tight=True, title='error'):
         plt.tight_layout()
 
 
-def plot_F(t, torques, forces = None, tight=True, torque_lim = None, force_lim = None):
+def plot_forces(t, torques, forces = None, tight=True, torque_lim = None, force_lim = None):
 #    if len(F) != len(names):
 #        raise ValueError('number of elements do not match')
 

@@ -5,25 +5,29 @@ Created on Thu Sep  9 11:20:49 2021
 
 @author: evbernardes
 """
-#%%
 import os
 import time
 import numpy as np
 from numpy.linalg import norm
 import json
 import quaternionic as quat
-#from numpy.linalg import norm
-#from scipy import integrate
-import matplotlib.pyplot as plt
 
-from monospinner_parameters import param_ctrl, param_goal, param_init, param_noise, param_phys, param_time
-from monospinner_helpers import set_ctrl, set_goal, set_init, set_noise, set_phys, set_time
-from monospinner_helpers import arrlist_1, arrlist_3, arrlist_quat
-from helpers import wrap, cross, ad, get_middle_vector, mstack
-from helpers import TODEG, TORAD, Id, zeroM, zeroV, ez, Ez, eps
-from helpers_plot import plot_x_eta, plot_k_omega, plot_F
+from .helpers import cross, ad, get_middle_vector, mstack
+from .helpers import TODEG, TORAD, Id, zeroM, zeroV, ez, Ez, eps
 
 
+# Helpers for saving and loading
+arrlist_quat = ['q', 'q_measured', 'q_drift']
+
+arrlist_1 = [
+        't', 'alpha', 'beta', 'drift_angle', 'drift_angle_measured',
+        'rotvel', 'pre', 'nut', 'spin', 'alpha_lim', 'fz', 'tz']
+
+arrlist_3 = [
+        'k', 'k_measured', 'w', 'w_measured', 'w_delta',
+        'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl',
+        't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn',
+        't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'kd']
 
 
 def save_param_dict(sim, datadict, param_dict_name):
@@ -31,15 +35,17 @@ def save_param_dict(sim, datadict, param_dict_name):
     for item in param_dict.items():
         datadict[f'{param_dict_name}_{item[0]}'] = item[1]
 
+
 def load_param_dict(datadict, param_dict_name):
     param_dict = {}
     L = len(param_dict_name)
     for item in datadict.items():
-        if(item[0][:L] == param_dict_name):
+        if (item[0][:L] == param_dict_name):
             param_dict[item[0][L+1:]] = item[1]
     return param_dict
 
-def set_blender_file(sim, frame_step = 1, show_pos = False, frames_max = 1000):
+
+def set_blender_file(sim, frame_step=1, show_pos=False, frames_max=1000):
 
     step = int(sim.N / frames_max)
 
@@ -56,7 +62,7 @@ def set_blender_file(sim, frame_step = 1, show_pos = False, frames_max = 1000):
     data['qy'] = list(sim.q.y[::step])
     data['qz'] = list(sim.q.z[::step])
     data['gamma'] = list(sim.angles.T[2][::step])
-    #data['gamma'] = list(0*angles.T[2][::step])
+#    data['gamma'] = list(0*angles.T[2][::step])
     data['alpha'] = list(sim.angles.T[1][::step])
     data['beta'] = list(sim.angles.T[0][::step])
     data['frame_step'] = frame_step
@@ -68,48 +74,27 @@ def set_blender_file(sim, frame_step = 1, show_pos = False, frames_max = 1000):
 #    set_blender_file(self, frame_step = frame_step, show_pos = show_pos, frames_max = frames_max)
 #    os.system('blender --python blender_test.py')
 
+
 class Monospinner:
-    def play(self, frame_step = 1, show_pos = False, frames_max = 1000):
-        set_blender_file(self, frame_step = frame_step, show_pos = show_pos, frames_max = frames_max)
+    def play(self, frame_step=1, show_pos=False, frames_max=1000):
+
+        set_blender_file(self,
+                         frame_step=frame_step,
+                         show_pos=show_pos,
+                         frames_max=frames_max)
+
         os.system('blender --python blender_test.py')
         os.remove('.blender_temp.json')
 
-    def __init__(self,
-                 param_phys = param_phys,
-                 param_time = param_time,
-                 param_ctrl = param_ctrl,
-                 param_noise = param_noise,
-                 param_init = param_init,
-                 param_goal = param_goal):
+    def __init__(self, parameters):
 
-#        %% set all elements
-        set_phys(self, param_phys, False)
-        set_time(self, param_time, False)
-        set_ctrl(self, param_ctrl, False)
-        set_noise(self, param_noise, False)
-        set_init(self, param_init, False)
-        set_goal(self, param_goal, False)
-
+        # set all elements
+        self.set_parameters(parameters, False)
         self.init_arrays()
-
-
-
-
 
     def save(self, filename):
         data = {}
-#        save_param_dict(self, data, 'param_phys')
-#        save_param_dict(self, data, 'param_time')
-#        save_param_dict(self, data, 'param_ctrl')
-#        save_param_dict(self, data, 'param_noise')
-#        save_param_dict(self, data, 'param_init')
-#        save_param_dict(self, data, 'param_goal')
-        data['param_phys'] = self.param_phys
-        data['param_time'] = self.param_time
-        data['param_ctrl'] = self.param_ctrl
-        data['param_noise'] = self.param_noise
-        data['param_init'] = self.param_init
-        data['param_goal'] = self.param_goal
+        data['parameters'] = self.parameters
         data['N'] = self.N
         data['i'] = self.i
 
@@ -144,14 +129,8 @@ class Monospinner:
         if dirs != '' and not os.path.exists(dirs):
             os.makedirs(dirs, exist_ok=True)
 
-#        try:
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)
-#            return True
-#        except:
-#            return data
-
-
 
     @classmethod
     def load(cls, filename):
@@ -160,8 +139,7 @@ class Monospinner:
             data = json.load(json_file)
 #        return data
 
-        sim = cls(data['param_phys'], data['param_time'], data['param_ctrl'],
-                 data['param_noise'], data['param_init'], data['param_goal'])
+        sim = cls(data['parameters'])
 
         for att in arrlist_1+arrlist_3:
             try:
@@ -174,35 +152,6 @@ class Monospinner:
                 setattr(sim, att, quat.array(data[f'{att}']))
             except:
                 pass
-#            data[f'{att}'] = getattr(self, att).tolist()
-
-#        qr = data['qr']
-#        qx = data['qx']
-#        qy = data['qy']
-#        qz = data['qz']
-#        sim.q = quat.array(np.vstack([qr, qx, qy, qz]).T)
-#
-#        qmr = data['qmr']
-#        qmx = data['qmx']
-#        qmy = data['qmy']
-#        qmz = data['qmz']
-#        sim.q_measured = quat.array(np.vstack([qmr, qmx, qmy, qmz]).T)
-#
-##        for att in list1:
-##            setattr(sim, att, data[f'{att}'])
-#
-#        sim.i = data['i']
-#        sim.N = data['N']
-#
-#        for att in list2:
-#            setattr(sim, att, np.array(data[f'{att}']))
-##            data[f'{att}'] = list(getattr(self, att))
-#
-#        for att in list3:
-#            x = np.array(data[f'{att}_x'])
-#            y = np.array(data[f'{att}_y'])
-#            z = np.array(data[f'{att}_z'])
-#            setattr(sim, att, np.vstack([x,y,z]).T)
 
         return sim
 
@@ -210,7 +159,7 @@ class Monospinner:
 
         N = self.N
 
-        #%% setting impulses
+        # setting impulses
         if self.number_impulses != 0:
             delta_imp = int(self.N / self.number_impulses)
             self.impulses_idx = np.array(range(self.number_impulses))*delta_imp
@@ -222,7 +171,7 @@ class Monospinner:
 
         self.i = 0
 
-        #%% setting goal arrays
+        # setting goal arrays
         self.nd = np.zeros([N,3])
         idx = np.array_split(range(N), self.ngoal)
         for i in range(self.ngoal):
@@ -231,7 +180,7 @@ class Monospinner:
         kd = (self.nd + ez).T/norm(self.nd + ez, axis=1)
         self.kd = kd = kd.T
 
-        #%% set initial values
+        # set initial values
         self.q[0] = self.q0
         self.drift_angle[0] = self.drift_angle_init
         self.q_drift[0] = quat.array.from_axis_angle(self.drift_angle[0] * ez)
@@ -241,13 +190,13 @@ class Monospinner:
         self.w[0][-1] = self.init_spin_percentage * self.terminal_wz
         self.w_measured[0] = self.w[0]
         self.pos[0] = self.pos0
-        self.pre[0],self.nut[0],self.spin[0] = self.q[0].to_euler_angles.T
+        self.pre[0], self.nut[0], self.spin[0] = self.q[0].to_euler_angles.T
         self.spin[0] += self.pre[0]
 
         self.rotvel[0] = self.gamma_d
 
-    #%% main loop
-    def run(self, stop_at_goal = None):
+    # main loop
+    def run(self, stop_at_goal=None):
 
         if stop_at_goal is not None:
             stop_at_goal = np.cos(stop_at_goal*TORAD / 2)
@@ -256,26 +205,27 @@ class Monospinner:
 
         time_start = time.time()
         time_end = time.time()
-        print(f'progress: {0}%, {0}/{self.N}, elapsed: {time_end-time_start:.2f}')
+        print(f'progress: {0}%, {0}/{self.N}, elapsed: '
+              f'{time_end-time_start:.2f}')
+
         for i in range(self.i+1, self.N):
 
-            #%% calculate all forces
-            self.control(i) # attitude control
-            self.motor_model(i) # get motor commands for given control
+            # calculate all forces
+            self.control(i)  # attitude control
+            self.motor_model(i)  # get motor commands for given control
             self.gravity_and_aero(i)
 
-            #%% integration and reconstruction
+            # integration and reconstruction
             etad = self.get_accelerations(i)
             self.integrate(etad, i)
 
-            #%% noisy measurements unreliable measurements
+            # noisy measurements unreliable measurements
             self.get_measured_data(i)
             self.estimate_drift_angle(i)
 
 #            alpha_now = q[i].to_euler_angles[1]
             if stop_at_goal is not None and self.k[i].dot(self.kd[i]) >= stop_at_goal:
                 break
-
 
 #            if stop_at_goal and abs(self.nut[i]) < 1*TORAD:
 #                break
@@ -297,18 +247,16 @@ class Monospinner:
                       f'{i}/{N}, elapsed: {elapsed_min}:{elapsed_sec:.0f}, '
                       f'remaining: {remaining_min}:{remaining_sec:.0f}, '
                       f'nut: {alpha_now*TODEG:.2f}')
-        #%%
+
         print('****************************************')
         print('* End of test at i = {}/{}'.format(i, N-1))
         print('* Time t = {}/{}'.format(self.t[i], self.t[-1]))
         print('****************************************')
         self.i = i
 
-
         if i < self.N-1:
             self.trim_results(i)
 
-    #%%
     def control(self, i):
         q_ = self.q_measured[i-1]
         k_ = self.k_measured[i-1]
@@ -317,8 +265,8 @@ class Monospinner:
         n = self.ctrl_order
 
         C = np.cross(k_, kd_)
-        D1 =  np.dot(k_, kd_)
-        D2 =  np.dot(k_, ez)
+        D1 = np.dot(k_, kd_)
+        D2 = np.dot(k_, ez)
 
         D1 = D1 if abs(D1) > eps else 0
         D2 = D2 if abs(D2) > eps else 0
@@ -342,16 +290,20 @@ class Monospinner:
 
         # low pass filter
         if self.ctrl_window > 1:
-            self.f_ctrl[i] = np.mean(self.f_ctrl[max(0,i+1-self.ctrl_window):i+1], axis=0)
-            self.t_ctrl[i] = np.mean(self.t_ctrl[max(0,i+1-self.ctrl_window):i+1], axis=0)
+            self.f_ctrl[i] = np.mean(
+                    self.f_ctrl[max(0, i+1-self.ctrl_window):i+1], axis=0)
+            self.t_ctrl[i] = np.mean(
+                    self.t_ctrl[max(0, i+1-self.ctrl_window):i+1], axis=0)
 
     def motor_model(self, i):
         ftot = self.f_ctrl[i] + self.fz
 
         # propeller force and torque
         self.rotvel[i] = np.sqrt(norm(ftot)/self.kf)
-        self.rotvel[i] = max(self.rotvel[i], self.rotvel_diff_lim[0]*self.gamma_d)
-        self.rotvel[i] = min(self.rotvel[i], self.rotvel_diff_lim[1]*self.gamma_d)
+        self.rotvel[i] = max(
+                self.rotvel[i], self.rotvel_diff_lim[0]*self.gamma_d)
+        self.rotvel[i] = min(
+                self.rotvel[i], self.rotvel_diff_lim[1]*self.gamma_d)
 
         # get rotor angles
         ftot = ftot/norm(ftot)
@@ -387,7 +339,7 @@ class Monospinner:
         self.t_aero[i] = -norm(self.w[i-1]) * self.Kaero @ self.w[i-1]
 #        self.t_aero[i] = -norm(self.w) * self.Kaero @ self.w[i-1]
 
-    def get_accelerations(self, i, gymbal_fixed = False):
+    def get_accelerations(self, i, gymbal_fixed=False):
         w_ = self.w[i-1]
         v_ = self.v[i-1]
 
@@ -396,16 +348,15 @@ class Monospinner:
                 self.t_prop[i] + self.t_grav[i] + self.t_aero[i] + self.t_rndn[i] + self.t_imp[i],
                 self.f_prop[i] + self.f_grav[i] + self.f_rndn[i] + self.f_imp[i])
 
-
         # coupling torque term
         RBP = quat.array.from_euler_angles(self.angles[i-1]).to_rotation_matrix
-        t_coup = self.Jp[2,2] * np.cross(self.w[i-1], RBP @ ez)
+        t_coup = self.Jp[2, 2] * np.cross(self.w[i-1], RBP @ ez)
 
         # full transformed inertia matrix
         JT = self.Jb + RBP @ self.Jp @ (RBP.T)
 
         # EOM components
-        D = mstack([[JT, zeroM],[zeroM, self.mI]]) + self.mx
+        D = mstack([[JT, zeroM], [zeroM, self.mI]]) + self.mx
         Dinv = np.linalg.inv(D)
         C = -ad(w_, v_).T @ D
 
@@ -463,12 +414,184 @@ class Monospinner:
                 self.k_measured[i],
                 self.w_measured[i])
 
-
-
-
-    def trim_results(self, i = None):
+    def trim_results(self, i=None):
         if i is None:
             i = self.i
         for att in arrlist_1 + arrlist_3 + arrlist_quat:
             setattr(self, att, getattr(self, att)[:i])
 
+    # parameter setting helpers
+    def set_parameters(self, parameters, init_arrays=True):
+        self.parameters = parameters
+
+        self.g = parameters['g']
+        hs = self.hs = parameters['hs']
+        hp = self.hp = parameters['hp']
+
+        mb = self.mb = parameters['mb']
+        ms = self.ms = parameters['ms']
+        mp = self.mp = parameters['mp']
+        mT = self.mT = mb+ms+mp
+        md = self.md = hs*ms - hp*mp
+        self.mI = mT * np.eye(3)
+
+        self.mx = md * mstack([[zeroM, -Ez],
+                              [Ez, zeroM]])
+
+        self.r = np.array([0, 0, hp])
+        self.r.shape = (3, 1)
+        self.mpr = mp*self.r
+        self.mprx = cross(self.mpr.T[0])
+
+        Jpx = self.Jpx = parameters['Jpx']
+        Jpy = self.Jpy = parameters['Jpy']
+        Jpz = self.Jpz = parameters['Jpz']
+        Jpxy = self.Jpxy = (Jpx+Jpy)/2
+        self.Jp = np.diag([Jpxy, Jpxy, Jpz])
+
+        Jbx = self.Jbx = parameters['Jbx']
+        Jby = self.Jby = parameters['Jby']
+        Jbz = self.Jbz = parameters['Jbz']
+        self.Jb = np.diag([Jbx, Jby, Jbz])
+
+        Jsx = self.Jsx = parameters['Jsx']
+        Jsy = self.Jsy = parameters['Jsy']
+        Jsz = self.Jsz = parameters['Jsz']
+        self.Js = np.diag([Jsx, Jsy, Jsz])
+
+        self.Jb = self.Jb + self.Js + np.diag([1, 1, 0])*(ms*(hs**2) + mp*(hp**2))
+
+        self.ktau = parameters['ktau']
+        self.kf = parameters['kf']
+        self.kratio = self.ktau / self.kf
+
+        self.B = self.kratio*Id + hp*Ez
+        self.Binv = np.linalg.inv(self.B)
+        self.BTotal = self.Binv @ self.Jb / self.kf
+
+        self.angvelz_ratio = parameters['angvelz_ratio']
+        self.angvelxy_coef = parameters['angvelxy_coef']
+#        self.angvelz_ratio = parameters['angvelz_ratio']
+
+        # Drag
+        if self.angvelz_ratio == 0:
+            self.Kz = 1000000
+        else:
+            self.Kz = self.ktau * (1/self.angvelz_ratio + 1)**2
+
+        self.Kaero = np.diag([self.angvelxy_coef, self.angvelxy_coef, 1]) * self.Kz
+
+        # Forces
+        self.FZ = self.mT * self.g
+        self.fz = self.FZ * ez
+        self.tz = self.B @ self.fz
+        self.gamma_d = 1.0 * np.sqrt(self.FZ / self.kf)  # rotor mean velocity
+
+        self.Nmin = Nmin = parameters['Nmin']
+        self.Nmin = Nmax = parameters['Nmax']
+        self.DT = DT = parameters['DT']
+        self.tmax = tmax = parameters['tmax']
+
+        self.t = np.arange(0, tmax+DT, DT)
+        self.N = N = len(self.t)
+
+        if Nmin is not None and N < Nmin:
+            self.DT = tmax/Nmin
+            self.t = np.array(range(Nmin))*DT
+            self.N = Nmin
+        elif Nmax is not None and N > Nmax:
+            self.DT = tmax/Nmax
+            self.t = np.array(range(Nmax))*DT
+            self.N = Nmax
+        self.dN = int(N / (100/parameters['progress_warning_percentage']))
+
+        # setting zero arrays
+        self.q = quat.array(np.zeros([N, 4]))
+        self.q_measured = quat.array(np.zeros([N, 4]))
+        self.q_drift = quat.array(np.zeros([N, 4]))
+        self.k = np.zeros([N, 3])
+        self.k_measured = np.zeros([N, 3])
+        self.w = np.zeros([N, 3])
+        self.w_measured = np.zeros([N, 3])
+        self.w_delta = np.zeros([N, 3])
+        self.w_delta_int = np.zeros([N, 3])
+        self.w_delta_der = np.zeros([N, 3])
+        self.t_ctrl = np.zeros([N, 3])
+        self.f_ctrl = np.zeros([N, 3])
+        self.t_grav = np.zeros([N, 3])
+        self.f_grav = np.zeros([N, 3])
+        self.t_prop = np.zeros([N, 3])
+        self.f_prop = np.zeros([N, 3])
+        self.t_aero = np.zeros([N, 3])
+        self.t_rndn = np.zeros([N, 3])
+        self.f_rndn = np.zeros([N, 3])
+        self.t_imp = np.zeros([N, 3])
+        self.f_imp = np.zeros([N, 3])
+#        self.Fext = np.zeros(6)
+        self.alpha = np.zeros(N)
+        self.beta = np.zeros(N)
+        self.Xd = np.zeros([N, 3])
+        self.drift_angle = np.zeros(N)
+        self.drift_angle_measured = np.zeros(N)
+        self.angles = np.zeros([N, 3])
+        self.rotvel = np.zeros(N)
+        self.pos = np.zeros([N, 3])
+        self.v = np.zeros([N, 3])
+        self.pre = np.zeros(N)
+        self.nut = np.zeros(N)
+        self.spin = np.zeros(N)
+
+        # set control parameters
+        self.ctrl_window = parameters['window']
+        self.alpha_lim = np.array(parameters['alpha_lim_deg'])*TORAD
+        self.rotvel_diff_lim = parameters['rotvel_diff_lim']
+
+        # control parameters
+        self.P = np.diag(parameters['P']) * self.mT * self.g
+        self.Kp = parameters['Kp']
+        self.Kd = parameters['Kd']
+        self.Ki = parameters['Ki']
+        self.ctrl_order = parameters['order']
+
+        # set noise
+#        self.drift_is_constant = self.parameters['drift_is_constant']
+        self.drift_rate = parameters['drift_rate_rads']
+        self.drift_flip = parameters['drift_flip']
+        self.drift_angle_init = parameters['drift_angle_init_deg']*TORAD
+
+        self.noise_measures = self.parameters['noise_measures']
+        self.noise_random = self.parameters['noise_random']
+        self.noise_impulses = self.parameters['noise_impulses']
+
+        self.number_impulses = self.parameters['number_impulses']
+
+        # initual condition
+        zyz = np.array(self.parameters['init_orientation_zyz_deg'])*TORAD
+        self.q0 = quat.array.from_euler_angles(*zyz)
+        self.pos0 = self.parameters['init_position']
+        self.init_spin_percentage = 0.3
+
+        # goal orientation
+        alphad = self.parameters['alpha_deg']
+        betad = self.parameters['beta_deg']
+
+        if type(alphad) != list:
+            alphad = [alphad]
+        if type(betad) != list:
+            betad = [betad]
+
+        ngoal = len(alphad)
+        if ngoal != len(betad):
+            raise ValueError('alphad and betad must have the same length')
+
+        alphad = np.array(alphad)*TORAD
+        betad = np.array(betad)*TORAD
+        self.ngoal = ngoal
+
+        sa, ca = np.sin(alphad), np.cos(alphad)
+        sb, cb = np.sin(betad), np.cos(betad)
+
+        self.nd_ = np.array([sa*cb, sa*sb, ca]).T
+
+        if init_arrays:
+            self.init_arrays()

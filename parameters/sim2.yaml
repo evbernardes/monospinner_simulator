@@ -1,0 +1,68 @@
+DT: 0.002
+Jbx: 0.0010026
+Jby: 0.0010026
+Jbz: 0.0001831
+Jpx: 0.0
+Jpy: 1.0500000000000001e-05
+Jpz: 0.0001061
+Jringx: 0.00249
+Jringy: 0.00239
+Jringz: 0.00497
+Jsx: 0.0001794
+Jsy: 3.87e-05
+Jsz: 0.0001928
+Kd: 0.0
+Ki: 0.0
+Kp: 0.5
+Nmax: null
+Nmin: 1000
+P:
+- 1.0
+- 1.0
+- 1.0
+alpha_deg: 0
+alpha_lim_deg:
+- 0
+- 10
+angvelxy_coef: 0
+angvelz_ratio: 0.02
+beta_deg: 0
+drag_linear: 0
+drift_angle_init_deg: 0
+drift_flip: true
+drift_rate_rads: 0.0
+g: 9.81
+hp: 0.083
+hs: 0.145
+init_orientation_zyz_deg:
+- 0
+- 0
+- 0
+init_position:
+- 0
+- 0
+- 0
+kf: 5.24e-06
+ktau: 1.08e-08
+mb: 0.210018
+mp: 0.006719
+ms: 0.200685
+noise_impulses:
+- 15
+- 15
+noise_measures:
+- 0
+- 0
+noise_random:
+- 0.01
+- 0.01
+number_impulses: 9
+order: 1
+progress_warning_percentage: 5
+rotvel_diff_lim:
+- 0.8
+- 1.2
+rotvel_ratio: 1.0
+spin_percentage: 0.0
+tmax: 15
+window: 0

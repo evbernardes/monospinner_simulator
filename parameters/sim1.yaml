@@ -1,0 +1,127 @@
+# masses
+mb: 0.210018
+mp: 0.006719
+ms: 0.200685
+
+# distances
+hp: 0.083
+hs: 0.145
+
+# gravity constant
+g: 9.81
+
+# time
+DT: 0.002
+Nmin: 1000
+Nmax: null
+tmax: 15
+progress_warning_percentage: 5
+
+# body inertia
+Jbx: 0.0010026
+Jby: 0.0010026
+Jbz: 0.0001831
+
+# rotor + propeller real inertia
+Jpx: 0.0
+Jpy: 1.0500000000000001e-05
+Jpz: 0.0001061
+
+# battery inertia
+Jsx: 0.0001794
+Jsy: 3.87e-05
+Jsz: 0.0001928
+
+Jringx: 0.00249
+Jringy: 0.00239
+Jringz: 0.00497
+
+# Drag parameters
+angvelxy_coef: 15
+angvelz_ratio: 0.02
+drag_linear: 0
+
+# motor constants
+kf: 5.24e-06
+ktau: 1.08e-08
+
+# nonlinear controller
+order: 1
+P:
+- 1.0
+- 1.0
+- 1.0
+
+# PID controller
+Kp: 0.5
+Kd: 0.0
+Ki: 0.0
+
+# other controller parameters
+window: 0
+rotvel_ratio: 1.0
+rotvel_diff_lim:
+- 0.8
+- 1.2
+
+# initial positions
+init_orientation_zyz_deg:
+- 0
+- 0
+- 0
+init_position:
+- 0
+- 0
+- 0
+spin_percentage: 0.3
+
+# desired orientation
+alpha_deg: # precession
+- 0
+- 45
+- 45
+- 45
+- 45
+- 45
+- 45
+- 45
+- 45
+- 0
+- 0
+
+beta_deg: # nutation
+- 0
+- 90
+- 90
+- 180
+- 180
+- 270
+- 270
+- 0
+- 0
+- 0
+- 0
+
+alpha_lim_deg:
+- 0 # min
+- 10 # max
+
+# angle drift
+drift_angle_init_deg: 0
+drift_flip: true
+drift_rate_rads: 0
+
+# noise parameters
+noise_impulses:
+- 1
+- 1
+
+noise_measures:
+- 0
+- 0
+
+noise_random:
+- 0.005
+- 0.005
+
+number_impulses: 9
