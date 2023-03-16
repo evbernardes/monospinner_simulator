@@ -1,5 +1,6 @@
 # Monospinner simulator
-Python implementation of a simulation of the drone described in "Modelling, control and simulation of a single rotor UAV with swashplateless torque modulation"
+Python implementation of a simulation of the drone described in the paper:
+**Modelling, control and simulation of a single rotor UAV with swashplateless torque modulation**
 
 ## Required libraries (any version should do):
 - numpy
