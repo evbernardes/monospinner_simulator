@@ -1,5 +1,6 @@
 saved_data
 article_data
 __pycache__
-.blender_temp.json
+Simulator/__pycache__
+Simulator/.blender_temp.json
 fuse_dicts.py

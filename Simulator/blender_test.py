@@ -1,11 +1,15 @@
 import bpy
 from mathutils import Vector, Quaternion
 import json
+import inspect
+from pathlib import Path
 import sys
 import numpy as np
 from math import sin, cos, sqrt, pi
 
 def play(frame_step = 1, show_pos = False, frames_max = 1000):
+
+    directory = Path(inspect.getfile(play)).parent
 
     frames_max = 1000
     step = int(N / frames_max)
@@ -28,13 +32,14 @@ def play(frame_step = 1, show_pos = False, frames_max = 1000):
     data['beta'] = list(angles.T[0][::step])
     data['frame_step'] = frame_step
 
-    with open('.blender_temp.json', 'w') as outfile:
+    with open(directory.joinpath('.blender_temp.json'), 'w') as outfile:
         json.dump(data, outfile)
 
     os.system('blender --python blender_test.py')
 
 #%% get data
-with open('.blender_temp.json') as json_file:
+directory = Path(inspect.getfile(play)).parent
+with open(directory.joinpath('.blender_temp.json')) as json_file:
     data = json.load(json_file)
     dt = data['dt']
     tmax = data['tmax']
@@ -92,7 +97,7 @@ stlfiles = [
 
 # create sphere and make it smooth
 # bpy.ops.import_mesh.stl(filepath=".", filter_glob="*.stl",  files=[{"name":"body.stl"}], directory="./3d files")
-bpy.ops.import_mesh.stl(filepath=".", files=stlfiles, directory="./3d files")
+bpy.ops.import_mesh.stl(filepath=".", files=stlfiles, directory=directory.joinpath("./3d files"))
 
 # objects = []
 objects = bpy.data.objects
