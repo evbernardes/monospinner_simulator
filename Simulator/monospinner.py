@@ -24,10 +24,10 @@ arrlist_1 = [
         'rotvel', 'pre', 'nut', 'spin', 'alpha_lim', 'fz', 'tz']
 
 arrlist_3 = [
-        'k', 'k_measured', 'w', 'w_measured', 'w_delta',
+        'nmiddle', 'nmiddle_measured', 'w', 'w_measured', 'w_delta',
         'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl',
         't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn',
-        't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'kd']
+        't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'nmiddledot']
 
 
 def save_param_dict(sim, datadict, param_dict_name):
@@ -101,29 +101,6 @@ class Monospinner:
         for att in arrlist_1+arrlist_3+arrlist_quat:
             data[f'{att}'] = getattr(self, att).tolist()
 
-#        data['q'] = self.q.tolist()
-#        data['q_measured'] = self.q_measured.tolist()
-#        data['qr'] = list(self.q.real)
-#        data['qx'] = list(self.q.x)
-#        data['qy'] = list(self.q.y)
-#        data['qz'] = list(self.q.z)
-#        data['qmr'] = list(self.q_measured.real)
-#        data['qmx'] = list(self.q_measured.x)
-#        data['qmy'] = list(self.q_measured.y)
-#        data['qmz'] = list(self.q_measured.z)
-
-#        for att in list1:
-#            data[f'{att}'] = getattr(self, att)
-
-#        for att in list2:
-#            data[f'{att}'] = list(getattr(self, att))
-##
-#        for att in list3:
-#            x, y, z = getattr(self, att).T
-#            data[f'{att}_x'] = list(x)
-#            data[f'{att}_y'] = list(y)
-#            data[f'{att}_z'] = list(z)
-
         dirs = os.path.dirname(filename)
 
         if dirs != '' and not os.path.exists(dirs):
@@ -137,7 +114,6 @@ class Monospinner:
 
         with open(filename) as json_file:
             data = json.load(json_file)
-#        return data
 
         sim = cls(data['parameters'])
 
@@ -177,15 +153,15 @@ class Monospinner:
         for i in range(self.ngoal):
             self.nd[idx[i]] = self.nd_[i]
 
-        kd = (self.nd + ez).T/norm(self.nd + ez, axis=1)
-        self.kd = kd = kd.T
+        nmiddledot = (self.nd + ez).T/norm(self.nd + ez, axis=1)
+        self.nmiddledot = nmiddledot = nmiddledot.T
 
         # set initial values
         self.q[0] = self.q0
         self.drift_angle[0] = self.drift_angle_init
         self.q_drift[0] = quat.array.from_axis_angle(self.drift_angle[0] * ez)
         self.q_measured[0] = self.q[0] * self.q_drift[0]
-        self.k_measured[0] = self.k[0] = get_middle_vector(self.q0)
+        self.nmiddle_measured[0] = self.nmiddle[0] = get_middle_vector(self.q0)
         self.terminal_wz = self.angvelz_ratio * self.gamma_d
         self.w[0][-1] = self.init_spin_percentage * self.terminal_wz
         self.w_measured[0] = self.w[0]
@@ -224,7 +200,7 @@ class Monospinner:
             self.estimate_drift_angle(i)
 
 #            alpha_now = q[i].to_euler_angles[1]
-            if stop_at_goal is not None and self.k[i].dot(self.kd[i]) >= stop_at_goal:
+            if stop_at_goal is not None and self.nmiddle[i].dot(self.nmiddledot[i]) >= stop_at_goal:
                 break
 
 #            if stop_at_goal and abs(self.nut[i]) < 1*TORAD:
@@ -258,21 +234,21 @@ class Monospinner:
 
     def control(self, i):
         q_ = self.q_measured[i-1]
-        k_ = self.k_measured[i-1]
+        nmiddle_ = self.nmiddle_measured[i-1]
         w_ = self.w_measured[i-1]
-        kd_ = self.kd[i-1]
+        nmiddledot_ = self.nmiddledot[i-1]
         n = self.ctrl_order
 
-        C = np.cross(k_, kd_)
-        D1 = np.dot(k_, kd_)
-        D2 = np.dot(k_, ez)
+        C = np.cross(nmiddle_, nmiddledot_)
+        D1 = np.dot(nmiddle_, nmiddledot_)
+        D2 = np.dot(nmiddle_, ez)
 
         D1 = D1 if abs(D1) > eps else 0
         D2 = D2 if abs(D2) > eps else 0
 
         S = np.sign(D1) ** (n - 1)
 
-        w_spin = (k_.dot(w_)/D2)*ez
+        w_spin = (nmiddle_.dot(w_)/D2) * ez
         w_ctrl = q_.inverse.rotate(C/(D1**n))
         # self.w_delta[i] = (w_.dot(w_))*ez + self.P @ q_.inverse.rotate(S * C/(D1**n))
         self.w_delta[i] = w_spin + S * self.P @ w_ctrl
@@ -377,7 +353,7 @@ class Monospinner:
         self.q[i] = (self.q[i-1] + qd).normalized
         self.pos[i] = self.pos[i-1] + DT * self.q[i-1].rotate(self.v[i-1])
 
-        self.k[i] = get_middle_vector(self.q[i], self.k[i-1])
+        self.nmiddle[i] = get_middle_vector(self.q[i], self.nmiddle[i-1])
 
         self.pre[i],self.nut[i],self.spin[i] = self.q[i].to_euler_angles.T
         self.spin[i] += self.pre[i]
@@ -388,29 +364,22 @@ class Monospinner:
         self.w_measured[i] = self.w[i] + (2*np.random.rand(3)-1)*self.noise_measures[0]
         self.q_measured[i] = self.q[i] + quat.array.random(normalize=1)*self.noise_measures[1]
         self.q_measured[i] = (self.q_measured[i]*self.q_drift[i]).normalized
-        self.k_measured[i] = get_middle_vector(self.q_measured[i], self.k_measured[i])
+        self.nmiddle_measured[i] = get_middle_vector(self.q_measured[i], self.nmiddle_measured[i])
 
     def estimate_drift_angle(self, i):
-#        q = self.q_measured[i]
-#        k = self.k_measured[i]
-#        w = self.w_measured[i]
 
-        def get_drift_angle(q, w, k):
+        def get_drift_angle(q, w, nmiddle):
             Rw = q.rotate(w)
-            wb = ez * k.dot(Rw) / k.dot(ez)
-            wk = q.rotate(w - wb)
-            kdot = -0.5 * np.cross(k, wk)
-            b = k.dot(ez) * kdot.dot(ez)
-            d = np.cross(k, kdot).dot(ez)
+            wb = ez * nmiddle.dot(Rw) / nmiddle.dot(ez)
+            wnmiddle = q.rotate(w - wb)
+            nmiddledot = -0.5 * np.cross(nmiddle, wnmiddle)
+            b = nmiddle.dot(ez) * nmiddledot.dot(ez)
+            d = np.cross(nmiddle, nmiddledot).dot(ez)
             return np.arctan2(d, b)
-
-        q = self.q[i]
-        k = self.k[i]
-        w = self.w[i]
 
         self.drift_angle_measured[i] = get_drift_angle(
                 self.q_measured[i],
-                self.k_measured[i],
+                self.nmiddle_measured[i],
                 self.w_measured[i])
 
     def trim_results(self, i=None):
@@ -508,8 +477,8 @@ class Monospinner:
         self.q = quat.array(np.zeros([N, 4]))
         self.q_measured = quat.array(np.zeros([N, 4]))
         self.q_drift = quat.array(np.zeros([N, 4]))
-        self.k = np.zeros([N, 3])
-        self.k_measured = np.zeros([N, 3])
+        self.nmiddle = np.zeros([N, 3])
+        self.nmiddle_measured = np.zeros([N, 3])
         self.w = np.zeros([N, 3])
         self.w_measured = np.zeros([N, 3])
         self.w_delta = np.zeros([N, 3])

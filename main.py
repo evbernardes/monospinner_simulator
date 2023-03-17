@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from Simulator.monospinner import Monospinner
 from Simulator import helpers_plot
 
-#%% open parameters
+# %% open parameters
 parameters_filenames = [
         'default.yaml',
         'sim1.yaml',
@@ -40,7 +40,7 @@ sim.run()
 # and then, they can be reloaded
 # sim = Monospinner.load('saved_data/simulation_data.json')
 
-#%% plots of sim results
+# %% plots of sim results
 plt.figure('nmiddle projection', figsize=(5, 5))
 helpers_plot.plot_nmiddle_projection(sim)
 
@@ -49,6 +49,5 @@ plt.figure('system overview', figsize=(15, 5))
 helpers_plot.plot_nmiddle_and_angvel(sim)
 
 # sim results in ZYZ angles
-plt.figure('zyz', figsize=(5,5))
+plt.figure('zyz', figsize=(5, 5))
 helpers_plot.plot_precession_nutation(sim)
-

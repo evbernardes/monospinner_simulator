@@ -308,7 +308,7 @@ def plot_k_omega_zyz(sim, i = None, tight = True, plot_drift = False):
     pre, nut, spin = wrap(sim.q.to_euler_angles).T
     spin = wrap(spin + pre)
 
-    qd = -quat.array.from_vector_part(sim.kd) * quat.array.from_vector_part(ez)
+    qd = -quat.array.from_vector_part(sim.nmiddledot) * quat.array.from_vector_part(ez)
     pred, nutd, spind = wrap(qd.to_euler_angles).T
 
     if test:
@@ -329,17 +329,17 @@ def plot_k_omega_zyz(sim, i = None, tight = True, plot_drift = False):
 
 
     subplot(m,4,1,3);
-    plt.plot(t, sim.kd[:, 0], 'k')
-    plt.plot(t, sim.k[:, 0],'r'); plt.ylim([-1.1, 1.1]);
+    plt.plot(t, sim.nmiddledot[:, 0], 'k')
+    plt.plot(t, sim.nmiddle[:, 0],'r'); plt.ylim([-1.1, 1.1]);
     plt.title(r'middle vector $(k)$')
 #    plt.hlines(kd[0], t[0], t[-1], colors='k', linestyles='dashed')
     subplot(m,4,2,3);
-    plt.plot(t, sim.kd[:, 1], 'k')
-    plt.plot(t, sim.k[:, 1],'g'); plt.ylim([-1.1, 1.1])
+    plt.plot(t, sim.nmiddledot[:, 1], 'k')
+    plt.plot(t, sim.nmiddle[:, 1],'g'); plt.ylim([-1.1, 1.1])
 #    plt.hlines(kd[1], t[0], t[-1], colors='k', linestyles='dashed')
     subplot(m,4,3,3);
-    plt.plot(t, sim.kd[:, 2], 'k')
-    plt.plot(t, sim.k[:, 2],'b'); plt.ylim([-0.1, 1.1])
+    plt.plot(t, sim.nmiddledot[:, 2], 'k')
+    plt.plot(t, sim.nmiddle[:, 2],'b'); plt.ylim([-0.1, 1.1])
 #    plt.hlines(kd[2], t[0], t[-1], colors='k', linestyles='dashed')
 
 #    subplot(4343); plt.plot(t, phi,'k'); #plt.ylim([-1.1, 1.1])
@@ -391,18 +391,21 @@ def plot_nmiddle_projection(sim, i = None, tight = True, plot_drift = False):
     circle_2 = circle(1/np.sqrt(2))
 
     plt.clf()
-    plt.axes().set_aspect('equal')
     legend = []
-    plt.plot(circle(1)[0], circle(1)[1], 'k', linestyle='dashed'); legend.append(r'$\theta_2 = \pi$')
-    plt.plot(circle(np.cos(np.pi/4))[0], circle(np.cos(np.pi/4))[1], 'gray', linestyle='dashed'); legend.append(r'$\theta_2 = \pi/2$')
-    plt.plot(sim.k[:,0], sim.k[:,1]); legend.append('middle vector')
-    plt.plot(sim.kd[0].T[0], sim.kd[0].T[1], 'r.'); legend.append('initial orientation')
+    plt.axes().set_aspect('equal')
+    plt.plot(circle(1)[0], circle(1)[1], 'k', linestyle='dashed');
+    legend.append(r'$\theta_2 = \pi$')
+    plt.plot(circle(np.cos(np.pi/4))[0], circle(np.cos(np.pi/4))[1], 'gray', linestyle='dashed')
+    legend.append(r'$\theta_2 = \pi/2$')
+
+    plt.plot(sim.nmiddle[:,0], sim.nmiddle[:,1]); legend.append('middle vector')
+    plt.plot(sim.nmiddledot[0].T[0], sim.nmiddledot[0].T[1], 'r.'); legend.append('initial orientation')
     plt.legend(legend)
     plt.xlim([-1.1, 1.1])
     plt.ylim([-1.1, 1.1])
-    plt.xlabel(r'$k_x$')
-    plt.ylabel(r'$k_y$')
-    plt.title(r'$(k_x, k_y)$')
+    plt.xlabel(r'$m_x$')
+    plt.ylabel(r'$m_y$')
+    plt.title(r'$(m_x, m_y)$')
     plt.tight_layout()
 
 def plot_nmiddle_and_angvel(sim, i = None, tight = True, plot_drift = False):
@@ -435,21 +438,21 @@ def plot_nmiddle_and_angvel(sim, i = None, tight = True, plot_drift = False):
     pre, nut, spin = wrap(sim.q.to_euler_angles).T
     spin = wrap(spin + pre)
 
-    qd = -quat.array.from_vector_part(sim.kd) * quat.array.from_vector_part(ez)
+    qd = -quat.array.from_vector_part(sim.nmiddledot) * quat.array.from_vector_part(ez)
     pred, nutd, spind = wrap(qd.to_euler_angles).T
 
     subplot(m,3,1,2);
-    plt.plot(t, sim.kd[:, 0], 'k'); plt.ylabel(r'$k_x$');
-    plt.plot(t, sim.k[:, 0],'r'); plt.ylim([-1.1, 1.1]);
+    plt.plot(t, sim.nmiddledot[:, 0], 'k'); plt.ylabel(r'$k_x$');
+    plt.plot(t, sim.nmiddle[:, 0],'r'); plt.ylim([-1.1, 1.1]);
     plt.title(r'middle vector $(k)$')
 #    plt.hlines(kd[0], t[0], t[-1], colors='k', linestyles='dashed')
     subplot(m,3,2,2);
-    plt.plot(t, sim.kd[:, 1], 'k'); plt.ylabel(r'$k_y$');
-    plt.plot(t, sim.k[:, 1],'g'); plt.ylim([-1.1, 1.1])
+    plt.plot(t, sim.nmiddledot[:, 1], 'k'); plt.ylabel(r'$k_y$');
+    plt.plot(t, sim.nmiddle[:, 1],'g'); plt.ylim([-1.1, 1.1])
 #    plt.hlines(kd[1], t[0], t[-1], colors='k', linestyles='dashed')
     subplot(m,3,3,2);
-    plt.plot(t, sim.kd[:, 2], 'k'); plt.ylabel(r'$k_z$');
-    plt.plot(t, sim.k[:, 2],'b'); plt.ylim([-0.1, 1.1])
+    plt.plot(t, sim.nmiddledot[:, 2], 'k'); plt.ylabel(r'$k_z$');
+    plt.plot(t, sim.nmiddle[:, 2],'b'); plt.ylim([-0.1, 1.1])
 #    plt.hlines(kd[2], t[0], t[-1], colors='k', linestyles='dashed')
 
 #    subplot(4343); plt.plot(t, phi,'k'); #plt.ylim([-1.1, 1.1])

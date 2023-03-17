@@ -96,32 +96,32 @@ def ad(w, v):
     vhat = cross(v)
     return mstack([[what, zeroM],[vhat, what]])
 
-def get_middle_vector(q, k_old = None, e = np.array([0, 0, 1]), eps = 1E-5):
-    k = q.rotate(e) + e
-    N = np.linalg.norm(k)
+def get_middle_vector(q, nmiddle_old = None, e = np.array([0, 0, 1]), eps = 1E-5):
+    nmiddle = q.rotate(e) + e
+    N = np.linalg.norm(nmiddle)
 
-    if N < eps:
-        if k_old is None:
-            return np.array([0, 1, 0])
-        else:
-            k = k_old - (k_old.dot(e))*e
-            return k / np.linalg.norm(k)
+    if N > eps:
+        return nmiddle / N
+    elif nmiddle_old is None:
+        return np.array([0, 1, 0])
     else:
-        return k / N
+        nmiddle = nmiddle_old - (nmiddle_old.dot(e))*e
+        return nmiddle / np.linalg.norm(nmiddle)
+
 
 def get_middle_vector_array(q, e = np.array([0, 0, 1]), eps = 1E-5):
-    k = q.rotate(e) + e
-    N = np.linalg.norm(k, axis=1)
+    nmiddle = q.rotate(e) + e
+    N = np.linalg.norm(nmiddle, axis=1)
 
     case_singular = N < eps
 
-    k[~case_singular] = (k.T / N).T[~case_singular]
+    nmiddle[~case_singular] = (nmiddle.T / N).T[~case_singular]
 
     for i in np.where(case_singular)[0]:
-        k[i] = k[i-1] - (k[i-1].dot(e))*e
-        k[i] /= np.linalg.norm(k[i])
+        nmiddle[i] = nmiddle[i-1] - (nmiddle[i-1].dot(e))*e
+        nmiddle[i] /= np.linalg.norm(nmiddle[i])
 
-    return k
+    return nmiddle
 
 
 def find_n(a,b):
