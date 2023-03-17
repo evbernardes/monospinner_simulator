@@ -8,13 +8,16 @@ Created on Thu Sep  9 11:20:49 2021
 import os
 import time
 import numpy as np
+from pathlib import Path
 from numpy.linalg import norm
 import json
 import quaternionic as quat
 
 from .helpers import cross, ad, get_middle_vector, mstack
-from .helpers import TODEG, TORAD, Id, zeroM, zeroV, ez, Ez, eps
+from .helpers import TORAD, Id, zeroM, zeroV, ez, Ez, eps
 
+# get file directory for Blender hack
+path = os.path.dirname(os.path.realpath(__file__))
 
 # Helpers for saving and loading
 arrlist_quat = ['q', 'q_measured', 'q_drift']
@@ -24,10 +27,11 @@ arrlist_1 = [
         'rotvel', 'pre', 'nut', 'spin', 'alpha_lim', 'fz', 'tz']
 
 arrlist_3 = [
-        'nmiddle', 'nmiddle_measured', 'w', 'w_measured', 'w_delta',
-        'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl',
+        'nmiddle', 'nmiddle_measured', 'nmiddledot', 'w', 'w_measured',
+        'w_delta', 'w_delta_int', 'w_delta_der', 't_ctrl', 'f_ctrl',
         't_grav', 'f_grav', 't_prop', 'f_prop', 't_aero', 't_rndn', 'f_rndn',
-        't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd', 'nmiddledot']
+        't_imp', 'f_imp', 'Xd', 'angles', 'pos', 'v', 'nd_', 'nd',
+        ]
 
 
 def save_param_dict(sim, datadict, param_dict_name):
@@ -45,7 +49,8 @@ def load_param_dict(datadict, param_dict_name):
     return param_dict
 
 
-def set_blender_file(sim, frame_step=1, show_pos=False, frames_max=1000):
+def set_blender_file(sim,
+                     frame_step=1, show_pos=False, frames_max=1000):
 
     step = int(sim.N / frames_max)
 
@@ -62,17 +67,12 @@ def set_blender_file(sim, frame_step=1, show_pos=False, frames_max=1000):
     data['qy'] = list(sim.q.y[::step])
     data['qz'] = list(sim.q.z[::step])
     data['gamma'] = list(sim.angles.T[2][::step])
-#    data['gamma'] = list(0*angles.T[2][::step])
     data['alpha'] = list(sim.angles.T[1][::step])
     data['beta'] = list(sim.angles.T[0][::step])
     data['frame_step'] = frame_step
 
-    with open('.blender_temp.json', 'w') as outfile:
+    with open(path+'/.blender_temp.json', 'w') as outfile:
         json.dump(data, outfile)
-
-#def play(self, frame_step = 1, show_pos = False, frames_max = 1000):
-#    set_blender_file(self, frame_step = frame_step, show_pos = show_pos, frames_max = frames_max)
-#    os.system('blender --python blender_test.py')
 
 
 class Monospinner:
@@ -83,8 +83,11 @@ class Monospinner:
                          show_pos=show_pos,
                          frames_max=frames_max)
 
-        os.system('blender --python blender_test.py')
-        os.remove('.blender_temp.json')
+        path_posix = path.replace(' ', '\ ')
+        os.system(f'blender --python {path_posix}/blender_test.py')
+        os.remove(path+'/.blender_temp.json')
+
+        return path
 
     def __init__(self, parameters):
 

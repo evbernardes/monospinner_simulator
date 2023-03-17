@@ -1,45 +1,15 @@
+import os
 import bpy
 from mathutils import Vector, Quaternion
 import json
-import inspect
-from pathlib import Path
-import sys
-import numpy as np
-from math import sin, cos, sqrt, pi
+from math import cos, pi
 
-def play(frame_step = 1, show_pos = False, frames_max = 1000):
+# get file directory for Blender hack
+path = os.path.dirname(os.path.realpath(__file__))
+path_posix = path.replace(' ', '\ ')
 
-    directory = Path(inspect.getfile(play)).parent
-
-    frames_max = 1000
-    step = int(N / frames_max)
-
-    data = {}
-    data['t'] = list(t[::step])
-    data['dt'] = DT
-    data['tmax'] = tmax
-    data['x'] = list(pos.T[0])
-    data['y'] = list(pos.T[1])
-    data['z'] = list(pos.T[2])
-    data['show_pos'] = int(show_pos)
-    data['qr'] = list(q.real[::step])
-    data['qx'] = list(q.x[::step])
-    data['qy'] = list(q.y[::step])
-    data['qz'] = list(q.z[::step])
-    data['gamma'] = list(angles.T[2][::step])
-    #data['gamma'] = list(0*angles.T[2][::step])
-    data['alpha'] = list(angles.T[1][::step])
-    data['beta'] = list(angles.T[0][::step])
-    data['frame_step'] = frame_step
-
-    with open(directory.joinpath('.blender_temp.json'), 'w') as outfile:
-        json.dump(data, outfile)
-
-    os.system('blender --python blender_test.py')
-
-#%% get data
-directory = Path(inspect.getfile(play)).parent
-with open(directory.joinpath('.blender_temp.json')) as json_file:
+# %% get data
+with open('.blender_temp.json') as json_file:
     data = json.load(json_file)
     dt = data['dt']
     tmax = data['tmax']
@@ -57,14 +27,14 @@ with open(directory.joinpath('.blender_temp.json')) as json_file:
     beta = data['beta']
     frame_step = data['frame_step']
 
-#%%
+# %%
 scale = 0.02
 scale_ref = 0.9
 #frame_step = 1
 h = 124
-rv = Vector([0,0,h])*scale
-r = Quaternion([0,0,0,h])*scale
-q0 = Quaternion([1,0,0],pi/2)
+rv = Vector([0, 0, h])*scale
+r = Quaternion([0, 0, 0, h])*scale
+q0 = Quaternion([1, 0, 0],pi/2)
 
 try:
     bpy.context.user_preferences.view.show_splash = False
@@ -97,7 +67,7 @@ stlfiles = [
 
 # create sphere and make it smooth
 # bpy.ops.import_mesh.stl(filepath=".", filter_glob="*.stl",  files=[{"name":"body.stl"}], directory="./3d files")
-bpy.ops.import_mesh.stl(filepath=".", files=stlfiles, directory=directory.joinpath("./3d files"))
+bpy.ops.import_mesh.stl(filepath=".", files=stlfiles, directory=f"{path}/3d files")
 
 # objects = []
 objects = bpy.data.objects
