@@ -32,9 +32,8 @@ with open('parameters/'+parameters_filenames[1]) as f:
 # with open('parameters/custom.yaml') as f:
 #     yaml.dump(parameters, sort_keys=True)
 
-#sim = Monospinner(parameters)
-#sim.run()
-sim = Monospinner.load('article_data/sim2.json')
+sim = Monospinner(parameters)
+sim.run()
 
 # after running, simulations can be saved as json files:
 # sim.save('saved_data/simulation_data.json')

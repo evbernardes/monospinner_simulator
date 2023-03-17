@@ -361,6 +361,7 @@ class Monospinner:
         self.pre[i],self.nut[i],self.spin[i] = self.q[i].to_euler_angles.T
         self.spin[i] += self.pre[i]
 
+    # for future drift-related tests:
     def get_measured_data(self, i):
         self.drift_angle[i] = self.drift_angle[i-1] + self.DT*self.drift_rate
         self.q_drift[i] = quat.array.from_axis_angle(self.drift_angle[i] * ez)
