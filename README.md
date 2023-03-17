@@ -2,10 +2,11 @@
 Python implementation of a simulation of the drone described in the paper:
 **Modelling, control and simulation of a single rotor UAV with swashplateless torque modulation**
 
-## Tested with:
+## Tested on Linux with:
 - `Python 3.8.10`
 - `numpy 1.21.6`
 - `quaternionic 1.0.5`
+- `blender 3.4.1`
 
 ## How to run simulations
 
