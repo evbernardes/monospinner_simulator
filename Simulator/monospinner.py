@@ -140,8 +140,8 @@ class Monospinner:
 
         # setting impulses
         if self.number_impulses != 0:
-            delta_imp = int(self.N / self.number_impulses)
-            self.impulses_idx = np.array(range(self.number_impulses))*delta_imp
+            self.impulses_idx = np.linspace(0, self.N-1, self.number_impulses)
+            self.impulses_idx = self.impulses_idx.astype(int)
             self.t_imp[self.impulses_idx] = self.noise_impulses[0] * np.vstack([2*np.random.rand(2,self.number_impulses)-1,np.zeros(self.number_impulses)]).T
             self.f_imp[self.impulses_idx] = self.noise_impulses[1] * (2*np.random.rand(3,self.number_impulses).T - 1)
 
@@ -470,11 +470,11 @@ class Monospinner:
         if Nmin is not None and N < Nmin:
             self.DT = tmax/Nmin
             self.t = np.array(range(Nmin))*DT
-            self.N = Nmin
+            self.N = N = Nmin
         elif Nmax is not None and N > Nmax:
             self.DT = tmax/Nmax
             self.t = np.array(range(Nmax))*DT
-            self.N = Nmax
+            self.N = N = Nmax
         self.dN = int(N / (100/parameters['progress_warning_percentage']))
 
         # setting zero arrays
