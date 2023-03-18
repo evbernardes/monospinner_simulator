@@ -465,53 +465,53 @@ class Monospinner:
         self.tmax = tmax = parameters['tmax']
 
         self.t = np.arange(0, tmax+DT, DT)
-        self.N = N = len(self.t)
+        self.N = len(self.t)
 
-        if Nmin is not None and N < Nmin:
+        if Nmin is not None and self.N < Nmin:
             self.DT = tmax/Nmin
             self.t = np.array(range(Nmin))*DT
-            self.N = N = Nmin
-        elif Nmax is not None and N > Nmax:
+            self.N = Nmin
+        elif Nmax is not None and self.N > Nmax:
             self.DT = tmax/Nmax
             self.t = np.array(range(Nmax))*DT
-            self.N = N = Nmax
-        self.dN = int(N / (100/parameters['progress_warning_percentage']))
+            self.N = Nmax
+        self.dN = int(self.N / (100/parameters['progress_warning_percentage']))
 
         # setting zero arrays
-        self.q = quat.array(np.zeros([N, 4]))
-        self.q_measured = quat.array(np.zeros([N, 4]))
-        self.q_drift = quat.array(np.zeros([N, 4]))
-        self.nmiddle = np.zeros([N, 3])
-        self.nmiddle_measured = np.zeros([N, 3])
-        self.w = np.zeros([N, 3])
-        self.w_measured = np.zeros([N, 3])
-        self.w_delta = np.zeros([N, 3])
-        self.w_delta_int = np.zeros([N, 3])
-        self.w_delta_der = np.zeros([N, 3])
-        self.t_ctrl = np.zeros([N, 3])
-        self.f_ctrl = np.zeros([N, 3])
-        self.t_grav = np.zeros([N, 3])
-        self.f_grav = np.zeros([N, 3])
-        self.t_prop = np.zeros([N, 3])
-        self.f_prop = np.zeros([N, 3])
-        self.t_aero = np.zeros([N, 3])
-        self.t_rndn = np.zeros([N, 3])
-        self.f_rndn = np.zeros([N, 3])
-        self.t_imp = np.zeros([N, 3])
-        self.f_imp = np.zeros([N, 3])
+        self.q = quat.array(np.zeros([self.N, 4]))
+        self.q_measured = quat.array(np.zeros([self.N, 4]))
+        self.q_drift = quat.array(np.zeros([self.N, 4]))
+        self.nmiddle = np.zeros([self.N, 3])
+        self.nmiddle_measured = np.zeros([self.N, 3])
+        self.w = np.zeros([self.N, 3])
+        self.w_measured = np.zeros([self.N, 3])
+        self.w_delta = np.zeros([self.N, 3])
+        self.w_delta_int = np.zeros([self.N, 3])
+        self.w_delta_der = np.zeros([self.N, 3])
+        self.t_ctrl = np.zeros([self.N, 3])
+        self.f_ctrl = np.zeros([self.N, 3])
+        self.t_grav = np.zeros([self.N, 3])
+        self.f_grav = np.zeros([self.N, 3])
+        self.t_prop = np.zeros([self.N, 3])
+        self.f_prop = np.zeros([self.N, 3])
+        self.t_aero = np.zeros([self.N, 3])
+        self.t_rndn = np.zeros([self.N, 3])
+        self.f_rndn = np.zeros([self.N, 3])
+        self.t_imp = np.zeros([self.N, 3])
+        self.f_imp = np.zeros([self.N, 3])
 #        self.Fext = np.zeros(6)
-        self.alpha = np.zeros(N)
-        self.beta = np.zeros(N)
-        self.Xd = np.zeros([N, 3])
-        self.drift_angle = np.zeros(N)
-        self.drift_angle_measured = np.zeros(N)
-        self.angles = np.zeros([N, 3])
-        self.rotvel = np.zeros(N)
-        self.pos = np.zeros([N, 3])
-        self.v = np.zeros([N, 3])
-        self.pre = np.zeros(N)
-        self.nut = np.zeros(N)
-        self.spin = np.zeros(N)
+        self.alpha = np.zeros(self.N)
+        self.beta = np.zeros(self.N)
+        self.Xd = np.zeros([self.N, 3])
+        self.drift_angle = np.zeros(self.N)
+        self.drift_angle_measured = np.zeros(self.N)
+        self.angles = np.zeros([self.N, 3])
+        self.rotvel = np.zeros(self.N)
+        self.pos = np.zeros([self.N, 3])
+        self.v = np.zeros([self.N, 3])
+        self.pre = np.zeros(self.N)
+        self.nut = np.zeros(self.N)
+        self.spin = np.zeros(self.N)
 
         # set control parameters
         self.ctrl_window = parameters['window']
