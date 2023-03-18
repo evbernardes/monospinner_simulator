@@ -23,22 +23,23 @@ with open('parameters/'+parameters_filenames[1]) as f:
 
 # To change simulation, either load a different file or change just some of
 # the parameters, for example:
-# parameters['noise_random'] = [0.005, 0.005]
+parameters['noise_random'] = [0.005, 0.005]
+#parameters['tmax'] = 1
 
 # When changing the desired orientation angles, remember that they are given
 # in degrees and that len(alpha_deg) == len(beta_deg)
 
 # to save the parameters, use:
-# with open('parameters/custom.yaml') as f:
-#     yaml.dump(parameters, sort_keys=True)
+#with open('parameters/custom.yaml') as f:
+#    yaml.dump(parameters, sort_keys=True)
 
 sim = Monospinner(parameters)
 sim.run()
 
 # after running, simulations can be saved as json files:
-# sim.save('saved_data/simulation_data.json')
+#sim.save('saved_data/simulation_data.json')
 # and then, they can be reloaded
-# sim = Monospinner.load('saved_data/simulation_data.json')
+#sim = Monospinner.load('saved_data/simulation_data.json')
 
 # %% plots of sim results
 plt.figure('nmiddle projection', figsize=(5, 5))
