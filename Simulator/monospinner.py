@@ -202,18 +202,13 @@ class Monospinner:
             self.get_measured_data(i)
             self.estimate_drift_angle(i)
 
-#            alpha_now = q[i].to_euler_angles[1]
             if stop_at_goal is not None and self.nmiddle[i].dot(self.nmiddledot[i]) >= stop_at_goal:
                 break
-
-#            if stop_at_goal and abs(self.nut[i]) < 1*TORAD:
-#                break
 
             if self.gamma_d != 0 and norm(self.w[i]) > 10*self.gamma_d:
                 break
 
             if i % self.dN == 0:
-                alpha_now = self.q[i-1].to_euler_angles[1]
                 time_end = time.time()
                 elapsed = time_end-time_start
                 elapsed_min = int(elapsed / 60)
@@ -221,7 +216,6 @@ class Monospinner:
                 remaining = elapsed * (N/i - 1)
                 remaining_min = int(remaining / 60)
                 remaining_sec = remaining - 60*remaining_min
-        #        print(f'progress: {100*i/N:.2f}%, {i}/{N}, elapsed: {elapsed:.2f}s, remaining: {remaining:.2f}s')
                 print(f'progress: {100*i/N:.0f}%, '
                       f'{i}/{N}, elapsed: {elapsed_min}:{elapsed_sec:.0f}, '
                       f'remaining: {remaining_min}:{remaining_sec:.0f}, ')
@@ -347,6 +341,9 @@ class Monospinner:
         return etad
 
     def integrate(self, etad, i):
+        # TODO: replace these integration steps for a better algorithm
+        # Example: RK for angular acceleration, and SLERP for quaternion
+
         DT = self.DT
         self.w[i] = self.w[i-1] + DT*etad[:3]
         self.v[i] = self.v[i-1] + DT*etad[3:]
