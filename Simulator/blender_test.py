@@ -9,7 +9,7 @@ path = os.path.dirname(os.path.realpath(__file__))
 path_posix = path.replace(' ', '\ ')
 
 # %% get data
-with open('.blender_temp.json') as json_file:
+with open(path+'/.blender_temp.json') as json_file:
     data = json.load(json_file)
     dt = data['dt']
     tmax = data['tmax']
