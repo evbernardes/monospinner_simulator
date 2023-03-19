@@ -1,14 +1,14 @@
 # Monospinner simulator
 Python implementation of a simulation of the drone described in the paper:
 
-- **Evandro Bernardes, Fréféric Boyer, and Stéphane Viollet. Modelling, control and simulation of a single rotor uav with swashplateless
+- **Evandro Bernardes, Fréféric Boyer, and Stéphane Viollet. Modelling, control and simulation of a single rotor UAV with swashplateless
 torque modulation** (Elsevier Aerospace Science and Technology, in revision)
 
 ## Tested on Linux with:
 - `Python 3.8.10`
 - `numpy 1.21.6`
 - `quaternionic 1.0.5`
-- `blender 3.4.1`
+- `blender 3.4.1` (for visualization on Linux)
 
 ## How to run simulations
 
@@ -28,8 +28,8 @@ The `Monospinner` class implements `save` and `load` methods to store the whole 
 
 This can be used, for example, if new plots are to be made out of a previously run simulation.
 
-## Visualization
-A hacky solution to see the visualization is implemented with the `play` method, but this is not very stable.
+## Visualization (only on Linux)
+A hacky solution for the visualization of the results on Blender is implemented with the `play` method, but this is not very stable.
 
 ## TODO:
 This code must be completely refactored.
